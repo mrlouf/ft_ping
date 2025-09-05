@@ -6,7 +6,7 @@
 /*   By: nponchon <nponchon@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/05 18:03:37 by nponchon          #+#    #+#             */
-/*   Updated: 2025/09/05 18:09:27 by nponchon         ###   ########.fr       */
+/*   Updated: 2025/09/05 18:20:59 by nponchon         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,5 +14,7 @@
 # define FT_PING_H
 
 #include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 
 #endif
