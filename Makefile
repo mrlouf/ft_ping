@@ -8,7 +8,9 @@ INCS		:=	incs
 
 # -=-=-=-=-    FILES -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- #
 
-SRC 		:= 	main.c					
+SRC 		:= 	main.c						\
+				parse/parse.c				\
+				initialise/initialise.c
 
 SRCDIR		= srcs
 SRCS		= $(addprefix $(SRCDIR)/, $(SRC))
@@ -19,6 +21,8 @@ OBJS		= $(addprefix $(OBJDIR)/, $(SRC:.c=.o))
 DEPDIR		= .dep
 DEPS		= $(addprefix $(DEPDIR)/, $(SRC:.c=.d))
 DEPDIRS		= $(DEPDIR)/main		\
+				$(DEPDIR)/parse		\
+				$(DEPDIR)/initialise
 
 HEADER		:=	incs/ft_ping.h
 

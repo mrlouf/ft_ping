@@ -1,28 +1,18 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   main.c                                             :+:      :+:    :+:   */
+/*   parse.c                                            :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: nponchon <nponchon@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/09/05 18:03:56 by nponchon          #+#    #+#             */
-/*   Updated: 2025/09/05 18:34:23 by nponchon         ###   ########.fr       */
+/*   Created: 2025/09/05 18:28:49 by nponchon          #+#    #+#             */
+/*   Updated: 2025/09/05 18:32:37 by nponchon         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "../incs/ft_ping.h"
+#include "../../incs/ft_ping.h"
 
-int	main(int ac, char **av) {
-	if (ac < 2) {
-		char *err = "Usage: ./ft_ping <IPv4> opt:<flags>\n";
-		write(2, err, strlen(err));
-		exit(1);
-	}
-
-	t_ping p;
-
-	ping_parse(av);
-	ping_initialise(av, &p);
-
-	return (0);
+void	ping_parse(char **av)
+{
+	printf("parsing %s\n", av[1]);
 }

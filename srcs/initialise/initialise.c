@@ -1,28 +1,22 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   main.c                                             :+:      :+:    :+:   */
+/*   initialise.c                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: nponchon <nponchon@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/09/05 18:03:56 by nponchon          #+#    #+#             */
-/*   Updated: 2025/09/05 18:34:23 by nponchon         ###   ########.fr       */
+/*   Created: 2025/09/05 18:31:32 by nponchon          #+#    #+#             */
+/*   Updated: 2025/09/05 18:38:26 by nponchon         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "../incs/ft_ping.h"
+#include "../../incs/ft_ping.h"
 
-int	main(int ac, char **av) {
-	if (ac < 2) {
-		char *err = "Usage: ./ft_ping <IPv4> opt:<flags>\n";
-		write(2, err, strlen(err));
+void	ping_initialise(char **av, t_ping *p)
+{
+	p = (t_ping*)malloc(sizeof(t_ping));
+	if (p == NULL)
 		exit(1);
-	}
 
-	t_ping p;
-
-	ping_parse(av);
-	ping_initialise(av, &p);
-
-	return (0);
+	printf("initialise %s %p\n", av[1], &p);
 }
