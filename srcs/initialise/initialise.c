@@ -6,7 +6,7 @@
 /*   By: nponchon <nponchon@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/05 18:31:32 by nponchon          #+#    #+#             */
-/*   Updated: 2025/09/05 18:38:26 by nponchon         ###   ########.fr       */
+/*   Updated: 2025/09/05 19:23:58 by nponchon         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,9 +14,8 @@
 
 void	ping_initialise(char **av, t_ping *p)
 {
-	p = (t_ping*)malloc(sizeof(t_ping));
-	if (p == NULL)
-		exit(1);
+	av++;
+	p->args = av;
 
-	printf("initialise %s %p\n", av[1], &p);
+	printf("initialise %s %p\n", p->args[0], p);
 }

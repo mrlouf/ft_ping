@@ -1,0 +1,52 @@
+### Example Implementation
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <signal.h>
+#include <unistd.h>
+
+volatile int ping_count = 0;
+
+void handle_sigint(int sig) {
+    (void)sig; // Suppress unused parameter warning
+    printf("\n--- Ping Statistics ---\n");
+    printf("Packets sent: %d\n", ping_count);
+    exit(0); // Exit gracefully
+}
+
+int main() {
+    // Set up the SIGINT handler
+    struct sigaction sa;
+    sa.sa_handler = handle_sigint;
+    sa.sa_flags = 0;
+    sigemptyset(&sa.sa_mask);
+    sigaction(SIGINT, &sa, NULL);
+
+    // Simulate a ping loop
+    while (1) {
+        printf("Pinging...\n");
+        ping_count++;
+        sleep(1); // Simulate delay between pings
+    }
+
+    return 0;
+}
+
+### Explanation
+1. **Signal Handling**:
+   - `sigaction()` is used to set up a handler for `SIGINT`.
+   - When `Ctrl-C` is pressed, the `handle_sigint()` function is called.
+
+2. **Graceful Exit**:
+   - Inside the signal handler, you can print the statistics and then call `exit()` to terminate the program.
+
+3. **Global State**:
+   - Use a `volatile` global variable (e.g., `ping_count`) to track the number of pings sent. This ensures the variable is accessible in both the main program and the signal handler.
+
+### Why This is Better
+- **Signal-Specific Handling**: You can directly handle `SIGINT` and perform specific actions.
+- **Control**: You have full control over what happens when the signal is received.
+- **Portability**: This approach is standard and widely used in C programs.
+
+### Summary
+While `atexit()` and `on_exit()` are useful for general cleanup tasks, they are not suitable for handling signals like `SIGINT`. Using `signal()` or `sigaction()` is the correct approach for implementing the behavior you described.

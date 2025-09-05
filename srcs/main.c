@@ -6,7 +6,7 @@
 /*   By: nponchon <nponchon@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/05 18:03:56 by nponchon          #+#    #+#             */
-/*   Updated: 2025/09/05 18:34:23 by nponchon         ###   ########.fr       */
+/*   Updated: 2025/09/05 19:25:00 by nponchon         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,10 +19,14 @@ int	main(int ac, char **av) {
 		exit(1);
 	}
 
-	t_ping p;
+	t_ping *p = (t_ping*)malloc(sizeof(t_ping));
+	if (p == NULL) {
+		exit(1);
+	}
 
 	ping_parse(av);
-	ping_initialise(av, &p);
+	ping_initialise(av, p);
 
+	free(p);
 	return (0);
 }
