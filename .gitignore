@@ -1,3 +1,11 @@
+# Binaries
+ft_ping
+.obj
+
+# Dependencies
+.dep
+
+
 # Prerequisites
 *.d
 
