@@ -1,28 +1,31 @@
 # ft_ping
 A recreation in C of the ping implementation from inetutils-2.0 (ping -V)
 
-## TODOs
+## Workflow
 #### Parse arguments:
 
-> Identify the destination (hostname/IP) and any optional flags.
+> Identify the destination (hostname/IP) and any optional flags.<br>
+> The mandatory part has to handle `-v` and `-?`. Other flags handled count as bonus.
 
 #### Resolve hostname:
 
-> Convert the hostname to an IP address for use with sockets.
+> Convert the hostname to an IP address for use with sockets. <br>
+> Once the IP is obtained, it is necessary to reverse lookup the IP to obtain the Full Qualified Domain Name (FQDN).
 
 #### Open socket:
 
 > Create a raw socket for sending and receiving ICMP packets.<br>
-> This requires root-permission, so getuid and setuid will be used.
+> This requires root-permission, so the program must be run with `sudo`.
 
 #### Main loop:
 
-> Send ICMP echo requests and receive replies.
+> Send ICMP echo requests and receive replies.<br>
 > Track statistics (sent, received, duplicates, etc.).
 
 #### Exit/cleanup:
 
-> On SIGINT or after sending the specified number of packets, call the results-printing function.
+> On SIGINT or after sending the specified number of packets, call the results-printing function.<br>
+> Free all allocated ressources.
 
 ### References
 

@@ -41,6 +41,7 @@
 typedef struct s_ping
 {
 	char	*ping_hostname;
+	char	*ping_fqdn;
 	char	*ping_ip;
 
 	int		is_root;

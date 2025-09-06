@@ -17,8 +17,11 @@
 */
 t_ping g_ping = {
 	.is_root = 0,
+	
 	.ping_hostname = NULL,
+	.ping_fqdn = NULL,
 	.ping_ip = NULL,
+
 	.ping_socket = -1,
 	.ping_ident = 0,
 	.ping_seq_num = 0,

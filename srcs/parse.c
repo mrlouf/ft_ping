@@ -44,6 +44,18 @@ void	get_flags(int ac, char **av)
 	}
 }
 
+void	get_full_hostname(void)
+{
+	char host[NI_MAXHOST];
+	if (getnameinfo((struct sockaddr *)&g_ping.ping_addr, sizeof(g_ping.ping_addr),
+					host, sizeof(host), NULL, 0, 0) == 0) {
+		g_ping.ping_fqdn = strdup(host);
+	} else {
+		fprintf(stderr, "Could not get full hostname for IP \"%s\"\n", g_ping.ping_ip);
+		exit(1);
+	}
+}
+
 void	resolve_hostname(void)
 {
 	struct addrinfo hints = {0}, *res;
@@ -73,5 +85,6 @@ void	ping_parse(int ac, char **av)
 	g_ping.is_root = (getuid() == 0);
 
 	resolve_hostname();
+	get_full_hostname();
 
 }
