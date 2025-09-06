@@ -27,7 +27,7 @@ void	ping_finish(void) {
 
 void	ping_send(void)
 {
-	printf("PING %s (%s) %zu bytes\n",
+	printf("PING %s (%s) %zu bytes of data\n",
         g_ping.ping_hostname, g_ping.ping_ip, g_ping.ping_data_len);
 
     while (g_ping.ping_running) {
@@ -36,7 +36,7 @@ void	ping_send(void)
         printf("%zu bytes from %s (%s): ",
             g_ping.ping_data_len, g_ping.ping_fqdn, g_ping.ping_ip);
         printf("icmp_seq=%u ttl=%d time=%.2f ms\n",
-            ++g_ping.ping_seq_num, g_ping.ping_ttl, (double)(rand() % 1000) / 1000);
+            ++g_ping.ping_seq_num, g_ping.ping_ttl, (double)(rand() % 1000) / 1000); // TODO: track actual time
 
         if (g_ping.ping_flag_c > 0 && (int)g_ping.ping_num_emit >= g_ping.ping_flag_c) {
             g_ping.ping_running = 0;
