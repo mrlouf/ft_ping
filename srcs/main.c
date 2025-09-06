@@ -27,7 +27,7 @@ t_ping g_ping = {
 	.ping_timeout = 1,
 	.ping_ttl = 64,
 	.ping_flag_a = 0,
-	.ping_num_xmit = 0,
+	.ping_num_emit = 0,
 	.ping_num_recv = 0,
 	.ping_num_rept = 0,
 	.ping_running = 1,
@@ -40,17 +40,17 @@ void	ping_finish(int sig) {
 	fflush(stdout);
 	printf("\n");
 	printf("--- %s ping statistics ---\n", g_ping.ping_hostname);
-	printf("%zu packets transmitted, ", g_ping.ping_num_xmit);
+	printf("%zu packets emitted, ", g_ping.ping_num_emit);
 	printf("%zu packets received, ", g_ping.ping_num_recv);
 	if (g_ping.ping_num_rept)
 		printf("+%zu duplicates, ", g_ping.ping_num_rept);
-	if (g_ping.ping_num_xmit) {
-		if (g_ping.ping_num_recv > g_ping.ping_num_xmit)
-			printf("-- somebody is printing forged packets!");
+	if (g_ping.ping_num_emit) {
+		if (g_ping.ping_num_recv > g_ping.ping_num_emit)
+			printf("-- received more packets than emitted, something went wrong --");
 		else
 			printf ("%d%% packet loss",
-				(int)(((g_ping.ping_num_xmit - g_ping.ping_num_recv) * 100) /
-				g_ping.ping_num_xmit));
+				(int)(((g_ping.ping_num_emit - g_ping.ping_num_recv) * 100) /
+				g_ping.ping_num_emit));
 	}
 	printf("\n");
 	exit(0);
@@ -58,8 +58,7 @@ void	ping_finish(int sig) {
 
 int	main(int ac, char **av) {
 	if (ac < 2) {
-		char *err = "Usage: ./ft_ping <IPv4> opt:<flags>\n";
-		write(2, err, strlen(err));
+		dprintf(STDERR_FILENO, "usage: ft_ping [options] <destination>\n");
 		exit(1);
 	}
 
@@ -69,14 +68,13 @@ int	main(int ac, char **av) {
     sigemptyset(&sa.sa_mask);
     sigaction(SIGINT, &sa, NULL);
 
-	ping_parse(av);
-	ping_initialise(av, &g_ping);
+	ping_parse(ac, av);
 
 	while (true) {
 		// Placeholder for ping sending logic
 		sleep(g_ping.ping_interval);
-		g_ping.ping_num_xmit++;
-		printf("Ping %zu sent to %s\n", g_ping.ping_num_xmit, g_ping.ping_hostname);
+		g_ping.ping_num_emit++;
+		printf("Ping %zu sent to %s\n", g_ping.ping_num_emit, g_ping.ping_hostname);
 	}
 
 	return (0);

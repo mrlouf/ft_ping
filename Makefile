@@ -9,8 +9,8 @@ INCS		:=	incs
 # -=-=-=-=-    FILES -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- #
 
 SRC 		:= 	main.c						\
-				parse/parse.c				\
-				initialise/initialise.c
+				parse.c						\
+				send_ping.c
 
 SRCDIR		= srcs
 SRCS		= $(addprefix $(SRCDIR)/, $(SRC))

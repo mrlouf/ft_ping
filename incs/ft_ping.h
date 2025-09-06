@@ -51,7 +51,7 @@ typedef struct s_ping
 	int		ping_timeout;
 	int		ping_ttl;
 	int		ping_flag_a;
-	size_t	ping_num_xmit;
+	size_t	ping_num_emit;
 	size_t	ping_num_recv;
 	size_t	ping_num_rept;
 	int		ping_running;
@@ -61,7 +61,6 @@ typedef struct s_ping
 
 // Functions
 
-void	ping_parse(char **av);
-void	ping_initialise(char **av, t_ping *p);
+void	ping_parse(int ac, char **av);
 
 #endif

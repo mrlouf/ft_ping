@@ -10,9 +10,17 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "../../incs/ft_ping.h"
+#include "../incs/ft_ping.h"
 
-void	ping_parse(char **av)
+extern t_ping g_ping;
+
+void	ping_parse(int ac, char **av)
 {
-	printf("parsing %s\n", av[1]);
+	printf("parsing %s\n", av[ac - 1]);
+	g_ping.ping_hostname = av[ac - 1];
+
+	//TODO: resolve hostname to IP and store in g_ping.ping_ip
+	//TODO: handle other command line arguments and set flags in g_ping
+
+
 }
