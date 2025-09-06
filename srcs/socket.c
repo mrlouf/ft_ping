@@ -14,13 +14,19 @@
 
 extern t_ping g_ping;
 
+/*
+    Initialise the raw socket for Internet Control Message Protocol (ICMP)
+    communication. Sets up the socket, address structure,
+    and necessary options like TTL, depending on the flags provided.
+*/
 void    ping_socket_init(void)
 {
     if ((g_ping.ping_socket = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP)) < 0) {
-        perror("socket");
+        fprintf(stderr, "Socket creation failed: %s\n", strerror(errno));
         exit(1);
     }
 
+    // Initialize the ping identifier with the process ID
     g_ping.ping_ident = getpid() & 0xFFFF;
 
     g_ping.ping_addr.sin_family = AF_INET;
@@ -34,7 +40,7 @@ void    ping_socket_init(void)
     // Set TTL (Time To Live)
     if (setsockopt(g_ping.ping_socket, IPPROTO_IP, IP_TTL,
                    &g_ping.ping_ttl, sizeof(g_ping.ping_ttl)) != 0) {
-        perror("setsockopt");
+        fprintf(stderr, "Error setting socket options: %s\n", strerror(errno));
         exit(1);
     }
 }
