@@ -21,9 +21,7 @@ OBJS		= $(addprefix $(OBJDIR)/, $(SRC:.c=.o))
 
 DEPDIR		= .dep
 DEPS		= $(addprefix $(DEPDIR)/, $(SRC:.c=.d))
-DEPDIRS		= $(DEPDIR)/main		\
-				$(DEPDIR)/parse		\
-				$(DEPDIR)/initialise
+DEPDIRS		= $(DEPDIR)
 
 HEADER		:=	incs/ft_ping.h
 
@@ -50,7 +48,7 @@ all: $(NAME)
 $(OBJDIR)/%.o: $(SRCDIR)/%.c Makefile
 	@mkdir -p $(@D)
 	@$(CC) $(CFLAGS) $(INCLUDE) -MT $@ -MMD -MP -c $< -o $@
-	@mkdir -p $(DEPDIR) $(DEPDIRS)
+	@mkdir -p $(DEPDIR)
 	@mv $(patsubst %.o,%.d,$@) $(subst $(OBJDIR),$(DEPDIR),$(@D))/
 
 $(NAME): $(OBJS)
