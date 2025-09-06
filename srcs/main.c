@@ -16,7 +16,6 @@
 ** Global ping structure
 */
 t_ping g_ping = {
-	.args = NULL,
 	.is_root = 0,
 	.ping_hostname = NULL,
 	.ping_ip = NULL,
@@ -27,12 +26,14 @@ t_ping g_ping = {
 	.ping_interval = 1,
 	.ping_timeout = 1,
 	.ping_ttl = 64,
-	.ping_flag_v = 0,
 	.ping_num_emit = 0,
 	.ping_num_recv = 0,
 	.ping_num_rept = 0,
 	.ping_running = 1,
-	.ping_addr = {0}
+	.ping_addr = {0},
+
+	.ping_flag_v = 0,
+	.ping_flag_c = -1,
 };
 
 void	sigint_handler(int sig) {
@@ -46,6 +47,13 @@ int	main(int ac, char **av) {
 		dprintf(STDERR_FILENO, "usage: ft_ping [options] <destination>\n");
 		exit(1);
 	}
+
+	// Check for root privileges
+	if (getuid() != 0) {
+		dprintf(STDERR_FILENO, "ft_ping: must be run as root\n");
+		exit(1);
+	}
+	g_ping.is_root = 1;
 
 	struct sigaction sa;
     sa.sa_handler = sigint_handler;

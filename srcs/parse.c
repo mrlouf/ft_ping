@@ -16,16 +16,23 @@ extern t_ping g_ping;
 
 void	display_help(void)
 {
-	printf("Usage: ft_ping [options] <destination>\n");
+	printf("Usage: ft_ping [options] <destination>\n\n");
 	printf("Options:\n");
-	printf("  -v    verbose output\n");
-	printf("  -?    display this help and exit\n");
+	printf("  -c <count>    stop after sending (and receiving) <count> ECHO_RESPONSE packets\n");
+	printf("  -v    	verbose output\n");
+	printf("  -?    	display this help and exit\n");
 }
 
 void	get_flags(int ac, char **av)
 {
 	for (int i = 1; i < ac; i++) {
-		if (strcmp(av[i], "-v") == 0) {
+		if (strcmp(av[i], "-c") == 0 && i + 1 < ac) {
+			g_ping.ping_flag_c = atoi(av[++i]);
+			if (g_ping.ping_flag_c <= 0) {
+				fprintf(stderr, "Invalid count value -- '%s'\n", av[i]);
+				exit(1);
+			}
+		} else if (strcmp(av[i], "-v") == 0) {
 			g_ping.ping_flag_v = 1;
 		} else if (strcmp(av[i], "-?") == 0) {
 			display_help();
@@ -60,12 +67,6 @@ void	resolve_hostname(void)
 
 void	ping_parse(int ac, char **av)
 {
-	printf("Parsing \"");
-	for (int i = 0; i < ac; i++) {
-		printf("%s ", av[i]);
-	}
-	printf("\"\n");
-
 	get_flags(ac, av);
 
 	g_ping.ping_hostname = av[ac - 1];
@@ -73,5 +74,4 @@ void	ping_parse(int ac, char **av)
 
 	resolve_hostname();
 
-	//TODO: handle other command line arguments and set flags in g_ping
 }

@@ -40,7 +40,6 @@
 
 typedef struct s_ping
 {
-	char	**args;
 	char	*ping_hostname;
 	char	*ping_ip;
 
@@ -60,6 +59,7 @@ typedef struct s_ping
 	struct	sockaddr_in ping_addr;
 
 	int		ping_flag_v;	// verbose
+	int		ping_flag_c;	// count
 
 }	t_ping;
 

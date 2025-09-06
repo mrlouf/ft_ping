@@ -33,5 +33,12 @@ void	ping_send(void)
 		sleep(g_ping.ping_interval);
 		g_ping.ping_num_emit++;
 		printf("Ping %zu sent to %s\n", g_ping.ping_num_emit, g_ping.ping_hostname);
+
+        if (g_ping.ping_flag_c > 0 && (int)g_ping.ping_num_emit >= g_ping.ping_flag_c) {
+            g_ping.ping_running = 0;
+        }
 	}
+
+    ping_finish();
+    
 }
