@@ -35,9 +35,8 @@ t_ping g_ping = {
 	.ping_addr = {0}
 };
 
-void	ping_finish(int sig) {
+void	ping_finish(void) {
 
-	(void)sig;
 	fflush(stdout);
 	printf("\n");
 	printf("--- %s ping statistics ---\n", g_ping.ping_hostname);
@@ -57,6 +56,12 @@ void	ping_finish(int sig) {
 	exit(0);
 }
 
+void	sigint_handler(int sig) {
+	(void)sig;
+	g_ping.ping_running = 0;
+	ping_finish();
+}
+
 int	main(int ac, char **av) {
 	if (ac < 2) {
 		dprintf(STDERR_FILENO, "usage: ft_ping [options] <destination>\n");
@@ -64,14 +69,14 @@ int	main(int ac, char **av) {
 	}
 
 	struct sigaction sa;
-    sa.sa_handler = ping_finish;
+    sa.sa_handler = sigint_handler;
     sa.sa_flags = 0;
     sigemptyset(&sa.sa_mask);
     sigaction(SIGINT, &sa, NULL);
 
 	ping_parse(ac, av);
 
-	while (true) {
+	while (g_ping.ping_running) {
 		// Placeholder for ping sending logic
 		sleep(g_ping.ping_interval);
 		g_ping.ping_num_emit++;
