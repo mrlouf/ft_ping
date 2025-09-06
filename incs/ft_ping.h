@@ -63,5 +63,7 @@ typedef struct s_ping
 // Functions
 
 void	ping_parse(int ac, char **av);
+void	ping_send(void);
+void	ping_finish(void);
 
 #endif

@@ -35,27 +35,6 @@ t_ping g_ping = {
 	.ping_addr = {0}
 };
 
-void	ping_finish(void) {
-
-	fflush(stdout);
-	printf("\n");
-	printf("--- %s ping statistics ---\n", g_ping.ping_hostname);
-	printf("%zu packets emitted, ", g_ping.ping_num_emit);
-	printf("%zu packets received, ", g_ping.ping_num_recv);
-	if (g_ping.ping_num_rept)
-		printf("+%zu duplicates, ", g_ping.ping_num_rept);
-	if (g_ping.ping_num_emit) {
-		if (g_ping.ping_num_recv > g_ping.ping_num_emit)
-			printf("-- received more packets than emitted, something went wrong --");
-		else
-			printf ("%d%% packet loss",
-				(int)(((g_ping.ping_num_emit - g_ping.ping_num_recv) * 100) /
-				g_ping.ping_num_emit));
-	}
-	printf("\n");
-	exit(0);
-}
-
 void	sigint_handler(int sig) {
 	(void)sig;
 	g_ping.ping_running = 0;
@@ -75,13 +54,7 @@ int	main(int ac, char **av) {
     sigaction(SIGINT, &sa, NULL);
 
 	ping_parse(ac, av);
-
-	while (g_ping.ping_running) {
-		// Placeholder for ping sending logic
-		sleep(g_ping.ping_interval);
-		g_ping.ping_num_emit++;
-		printf("Ping %zu sent to %s\n", g_ping.ping_num_emit, g_ping.ping_hostname);
-	}
+	ping_send();
 
 	return (0);
 }
