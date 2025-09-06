@@ -19,12 +19,43 @@
 # include <string.h>
 # include <unistd.h>
 # include <stdio.h>
+# include <signal.h>
+# include <stdbool.h>
+# include <limits.h>
+# include <stddef.h>
+# include <stdint.h>
+
+# include <sys/types.h>
+# include <sys/socket.h>
+# include <netinet/in.h>
+# include <arpa/inet.h>
+# include <netdb.h>
+# include <errno.h>
+# include <time.h>
+# include <sys/time.h>
+# include <fcntl.h>
+# include <netinet/ip_icmp.h>
 
 // Typedefs
 
 typedef struct s_ping
 {
 	char	**args;
+	char	*ping_hostname;
+	char	*ping_ip;
+	int		ping_socket;
+	int		ping_ident;
+	int		ping_seq_num;
+	size_t	ping_data_len;
+	int		ping_interval;
+	int		ping_timeout;
+	int		ping_ttl;
+	int		ping_flag_a;
+	size_t	ping_num_xmit;
+	size_t	ping_num_recv;
+	size_t	ping_num_rept;
+	int		ping_running;
+	struct	sockaddr_in ping_addr;
 
 }	t_ping;
 
