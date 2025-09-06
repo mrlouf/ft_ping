@@ -37,7 +37,11 @@ void	ping_finish(void) {
 	exit(0);
 }
 
-// Helper: Calculate ICMP checksum
+/*
+    Calculate ICMP checksum. The checksum is the 16-bit valure used in the ICMP header
+    to verify the integrity of the ICMP message. It is computed by summing the
+    16-bit words of the ICMP message and taking the one's complement of the sum.
+*/
 unsigned short icmp_checksum(void *b, int len) {
     unsigned short *buf = b;
     unsigned int sum = 0;
@@ -53,6 +57,10 @@ unsigned short icmp_checksum(void *b, int len) {
     return result;
 }
 
+/*
+    Receive ICMP Echo Reply packets and process them. Handles timeouts and
+    prints relevant information about the received packets or errors.
+*/
 void    ping_receive(void)
 {
     char buffer[1024];
@@ -68,15 +76,17 @@ void    ping_receive(void)
 
     bytes_received = recvfrom(g_ping.ping_socket, buffer, sizeof(buffer), 0,
                               (struct sockaddr *)&addr, &addr_len);
+
     if (bytes_received < 0) {
         if (errno == EAGAIN || errno == EWOULDBLOCK) {
             printf("Request timed out for icmp_seq=%u\n", g_ping.ping_seq_num);
         } else {
-            perror("recvfrom");
+            fprintf(stderr, "Error receiving packet: %s\n", strerror(errno));
         }
         return;
     }
 
+    // Parse IP and ICMP headers from the received packet
     struct iphdr *ip = (struct iphdr *)buffer;
     struct icmphdr *icmp = (struct icmphdr *)(buffer + (ip->ihl * 4));
 
@@ -98,22 +108,34 @@ void    ping_receive(void)
     }
 }
 
+/*
+    The main loop of the ping function. It sends ICMP Echo Request packets until
+    the user stops the process or a certain number of packets (specified by -c flag) have been sent.
+    It also handles receiving replies and printing statistics at the end,
+    accounting for duplicates or timeouts.
+*/
 void ping_send(void)
 {
-    printf("PING %s (%s) %zu bytes of data\n",
-        g_ping.ping_hostname, g_ping.ping_ip, g_ping.ping_data_len);
+    printf("PING %s (%s) %zu(%zu) bytes of data\n",
+        g_ping.ping_hostname,
+        g_ping.ping_ip,
+        g_ping.ping_data_len,
+        g_ping.ping_data_len + sizeof(struct icmphdr) + sizeof(struct iphdr));
 
-    char packet[sizeof(struct icmphdr) + 56]; // 56 bytes data by default, to be modified via the flag -s
+    // 56 bytes data by default, can be modified via the flag -s
+    char packet[g_ping.ping_data_len + sizeof(struct icmphdr) + sizeof(struct iphdr)];
     struct icmphdr *icmp = (struct icmphdr *)packet;
 
     while (g_ping.ping_running) {
         memset(packet, 0, sizeof(packet));
+
         // Fill ICMP header
         icmp->type = ICMP_ECHO;
         icmp->code = 0;
         icmp->un.echo.id = htons(g_ping.ping_ident);
         icmp->un.echo.sequence = htons(++g_ping.ping_seq_num);
-        // Optionally fill payload with data (here, left zeroed)
+
+        // Fill payload with zeroes
         icmp->checksum = 0;
         icmp->checksum = icmp_checksum(packet, sizeof(struct icmphdr) + g_ping.ping_data_len);
 
@@ -126,7 +148,8 @@ void ping_send(void)
             sizeof(g_ping.ping_addr)
         );
         if (sent < 0) {
-            perror("sendto");
+            fprintf(stderr, "Error sending packet: %s\n", strerror(errno));
+            continue;
         } else {
             g_ping.ping_num_emit++;
         }
@@ -135,6 +158,7 @@ void ping_send(void)
 
         if (g_ping.ping_flag_c > 0 && (int)g_ping.ping_num_emit >= g_ping.ping_flag_c) {
             g_ping.ping_running = 0;
+            break;
         }
 
         sleep(g_ping.ping_interval);

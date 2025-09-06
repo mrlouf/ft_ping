@@ -19,6 +19,7 @@ void	display_help(void)
 	printf("Usage: ft_ping [options] <destination>\n\n");
 	printf("Options:\n");
 	printf("  -c <count>    stop after sending (and receiving) <count> ECHO_RESPONSE packets\n");
+	printf("  -s <size>     specify the number of data bytes to be sent\n");
 	printf("  -t <ttl>      set the Time To Live\n");
 	printf("  -v    	verbose output\n");
 	printf("  -?    	display this help and exit\n");
@@ -31,6 +32,15 @@ void	get_flags(int ac, char **av)
 			g_ping.ping_flag_c = atoi(av[++i]);
 			if (g_ping.ping_flag_c <= 0) {
 				fprintf(stderr, "Invalid count value -- '%s'\n", av[i]);
+				exit(1);
+			}
+		} else if ((strcmp(av[i], "-s") == 0) && i + 1 < ac) {
+			g_ping.ping_data_len = atoi(av[++i]);
+
+			// The maximum payload size (Maximum Transmission Unit) for ICMP
+			// is typically 1472 bytes: 1500 MTU - 20 IP header - 8 ICMP header
+			if (g_ping.ping_data_len > 1472) {
+				fprintf(stderr, "Invalid size value -- '%s'\n", av[i]);
 				exit(1);
 			}
 		} else if ((strcmp(av[i], "-t") == 0) && i + 1 < ac) {
