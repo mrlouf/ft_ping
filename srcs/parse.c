@@ -19,6 +19,8 @@ void	ping_parse(int ac, char **av)
 	printf("parsing %s\n", av[ac - 1]);
 	g_ping.ping_hostname = av[ac - 1];
 
+	g_ping.is_root = (getuid() == 0);
+
 	//TODO: resolve hostname to IP and store in g_ping.ping_ip
 	//TODO: handle other command line arguments and set flags in g_ping
 

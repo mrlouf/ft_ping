@@ -43,6 +43,7 @@ typedef struct s_ping
 	char	**args;
 	char	*ping_hostname;
 	char	*ping_ip;
+	int		is_root;
 	int		ping_socket;
 	int		ping_ident;
 	int		ping_seq_num;

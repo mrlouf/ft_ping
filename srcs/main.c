@@ -17,6 +17,7 @@
 */
 t_ping g_ping = {
 	.args = NULL,
+	.is_root = 0,
 	.ping_hostname = NULL,
 	.ping_ip = NULL,
 	.ping_socket = -1,
