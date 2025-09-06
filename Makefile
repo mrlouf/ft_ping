@@ -10,6 +10,7 @@ INCS		:=	incs
 
 SRC 		:= 	main.c						\
 				parse.c						\
+				socket.c					\
 				send_ping.c
 
 SRCDIR		= srcs

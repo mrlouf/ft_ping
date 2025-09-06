@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   send_ping.c                                        :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: nponchon <nponchon@student.42.fr>          +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/09/06 14:21:55 by nponchon          #+#    #+#             */
+/*   Updated: 2025/09/06 14:55:00 by nponchon         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "../incs/ft_ping.h"
 
 extern t_ping g_ping;
@@ -16,7 +28,7 @@ void	ping_finish(void) {
 			printf("-- received more packets than emitted, something went wrong --");
 		else
 			printf ("%d%% packet loss",
-				(int)(((g_ping.ping_num_emit - g_ping.ping_num_recv) * 100) /
+				(int)(((g_ping.ping_num_emit - g_ping.ping_num_recv) * 100)/
 				g_ping.ping_num_emit));
 	}
 	printf("\n");
@@ -25,26 +37,108 @@ void	ping_finish(void) {
 	exit(0);
 }
 
-void	ping_send(void)
+// Helper: Calculate ICMP checksum
+unsigned short icmp_checksum(void *b, int len) {
+    unsigned short *buf = b;
+    unsigned int sum = 0;
+    unsigned short result;
+
+    for (sum = 0; len > 1; len -= 2)
+        sum += *buf++;
+    if (len == 1)
+        sum += *(unsigned char*)buf;
+    sum = (sum >> 16) + (sum & 0xFFFF);
+    sum += (sum >> 16);
+    result = ~sum;
+    return result;
+}
+
+void    ping_receive(void)
 {
-	printf("PING %s (%s) %zu bytes of data\n",
+    char buffer[1024];
+    struct sockaddr_in addr;
+    socklen_t addr_len = sizeof(addr);
+    ssize_t bytes_received;
+
+    // Set socket to non-blocking with timeout
+    struct timeval tv;
+    tv.tv_sec = g_ping.ping_timeout;
+    tv.tv_usec = 0;
+    setsockopt(g_ping.ping_socket, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv);
+
+    bytes_received = recvfrom(g_ping.ping_socket, buffer, sizeof(buffer), 0,
+                              (struct sockaddr *)&addr, &addr_len);
+    if (bytes_received < 0) {
+        if (errno == EAGAIN || errno == EWOULDBLOCK) {
+            printf("Request timed out for icmp_seq=%u\n", g_ping.ping_seq_num);
+        } else {
+            perror("recvfrom");
+        }
+        return;
+    }
+
+    struct iphdr *ip = (struct iphdr *)buffer;
+    struct icmphdr *icmp = (struct icmphdr *)(buffer + (ip->ihl * 4));
+
+    if (icmp->type == ICMP_ECHOREPLY && ntohs(icmp->un.echo.id) == g_ping.ping_ident) {
+        g_ping.ping_num_recv++;
+        printf("%zd bytes from %s (%s): icmp_seq=%u ttl=%d\n",
+               bytes_received - (ip->ihl * 4),
+               g_ping.ping_fqdn,
+               g_ping.ping_ip,
+               ntohs(icmp->un.echo.sequence),
+               ip->ttl);
+    } else if (icmp->type == ICMP_ECHOREPLY) {
+        g_ping.ping_num_rept++;
+        if (g_ping.ping_flag_v)
+            printf("Duplicate packet received: icmp_seq=%u\n", ntohs(icmp->un.echo.sequence));
+    } else {
+        if (g_ping.ping_flag_v)
+            printf("Received non-echo reply packet: type=%d code=%d\n", icmp->type, icmp->code);
+    }
+}
+
+void ping_send(void)
+{
+    printf("PING %s (%s) %zu bytes of data\n",
         g_ping.ping_hostname, g_ping.ping_ip, g_ping.ping_data_len);
 
-    while (g_ping.ping_running) {
+    char packet[sizeof(struct icmphdr) + 56]; // 56 bytes data by default, to be modified via the flag -s
+    struct icmphdr *icmp = (struct icmphdr *)packet;
 
-		g_ping.ping_num_emit++;
-        printf("%zu bytes from %s (%s): ",
-            g_ping.ping_data_len, g_ping.ping_fqdn, g_ping.ping_ip);
-        printf("icmp_seq=%u ttl=%d time=%.2f ms\n",
-            ++g_ping.ping_seq_num, g_ping.ping_ttl, (double)(rand() % 1000) / 1000); // TODO: track actual time
+    while (g_ping.ping_running) {
+        memset(packet, 0, sizeof(packet));
+        // Fill ICMP header
+        icmp->type = ICMP_ECHO;
+        icmp->code = 0;
+        icmp->un.echo.id = htons(g_ping.ping_ident);
+        icmp->un.echo.sequence = htons(++g_ping.ping_seq_num);
+        // Optionally fill payload with data (here, left zeroed)
+        icmp->checksum = 0;
+        icmp->checksum = icmp_checksum(packet, sizeof(struct icmphdr) + g_ping.ping_data_len);
+
+        ssize_t sent = sendto(
+            g_ping.ping_socket,
+            packet,
+            sizeof(struct icmphdr) + g_ping.ping_data_len,
+            0,
+            (struct sockaddr *)&g_ping.ping_addr,
+            sizeof(g_ping.ping_addr)
+        );
+        if (sent < 0) {
+            perror("sendto");
+        } else {
+            g_ping.ping_num_emit++;
+        }
+
+        ping_receive();
 
         if (g_ping.ping_flag_c > 0 && (int)g_ping.ping_num_emit >= g_ping.ping_flag_c) {
             g_ping.ping_running = 0;
         }
 
         sleep(g_ping.ping_interval);
-	}
+    }
 
     ping_finish();
-    
 }

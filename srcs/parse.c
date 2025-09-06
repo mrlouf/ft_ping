@@ -6,7 +6,7 @@
 /*   By: nponchon <nponchon@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/05 18:28:49 by nponchon          #+#    #+#             */
-/*   Updated: 2025/09/05 18:32:37 by nponchon         ###   ########.fr       */
+/*   Updated: 2025/09/06 14:42:23 by nponchon         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,6 +19,7 @@ void	display_help(void)
 	printf("Usage: ft_ping [options] <destination>\n\n");
 	printf("Options:\n");
 	printf("  -c <count>    stop after sending (and receiving) <count> ECHO_RESPONSE packets\n");
+	printf("  -t <ttl>      set the Time To Live\n");
 	printf("  -v    	verbose output\n");
 	printf("  -?    	display this help and exit\n");
 }
@@ -30,6 +31,12 @@ void	get_flags(int ac, char **av)
 			g_ping.ping_flag_c = atoi(av[++i]);
 			if (g_ping.ping_flag_c <= 0) {
 				fprintf(stderr, "Invalid count value -- '%s'\n", av[i]);
+				exit(1);
+			}
+		} else if ((strcmp(av[i], "-t") == 0) && i + 1 < ac) {
+			g_ping.ping_ttl = atoi(av[++i]);
+			if (g_ping.ping_ttl <= 0 || g_ping.ping_ttl > 255) {
+				fprintf(stderr, "Invalid TTL value -- '%s'\n", av[i]);
 				exit(1);
 			}
 		} else if (strcmp(av[i], "-v") == 0) {

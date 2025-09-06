@@ -66,6 +66,7 @@ int	main(int ac, char **av) {
     sigaction(SIGINT, &sa, NULL);
 
 	ping_parse(ac, av);
+	ping_socket_init();
 	ping_send();
 
 	return (0);

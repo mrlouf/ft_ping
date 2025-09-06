@@ -6,7 +6,7 @@
 /*   By: nponchon <nponchon@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/05 18:03:37 by nponchon          #+#    #+#             */
-/*   Updated: 2025/09/05 18:37:21 by nponchon         ###   ########.fr       */
+/*   Updated: 2025/09/06 14:33:11 by nponchon         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -68,6 +68,7 @@ typedef struct s_ping
 
 void	ping_parse(int ac, char **av);
 void	ping_send(void);
+void	ping_socket_init(void);
 void	ping_finish(void);
 
 #endif
