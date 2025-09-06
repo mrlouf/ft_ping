@@ -76,22 +76,22 @@ void	get_full_hostname(void)
 void	resolve_hostname(void)
 {
 	struct addrinfo hints = {0}, *res;
-    hints.ai_family = AF_INET; // IPv4 only; use AF_UNSPEC for both IPv4/6
+	hints.ai_family = AF_INET; // IPv4 only; AF_UNSPEC is for IPv4/6
 
-    if (getaddrinfo(g_ping.ping_hostname, NULL, &hints, &res) == 0) {
-        struct sockaddr_in *addr = (struct sockaddr_in *)res->ai_addr;
-        static char ipstr[INET_ADDRSTRLEN];
+	if (getaddrinfo(g_ping.ping_hostname, NULL, &hints, &res) == 0) {
+		struct sockaddr_in *addr = (struct sockaddr_in *)res->ai_addr;
+		static char ipstr[INET_ADDRSTRLEN];
 		// Convert the IP to a string and store it
-        inet_ntop(AF_INET, &(addr->sin_addr), ipstr, sizeof(ipstr));
-        g_ping.ping_ip = ipstr;
+		inet_ntop(AF_INET, &(addr->sin_addr), ipstr, sizeof(ipstr));
+		g_ping.ping_ip = ipstr;
 		g_ping.ping_addr = *addr;
 
-        freeaddrinfo(res);
-    } else {
-        g_ping.ping_ip = NULL;
+		freeaddrinfo(res);
+	} else {
+		g_ping.ping_ip = NULL;
 		fprintf(stderr, "Could not resolve hostname \"%s\"\n", g_ping.ping_hostname);
 		exit(1);
-    }
+	}
 }
 
 void	ping_parse(int ac, char **av)

@@ -29,6 +29,7 @@ t_ping g_ping = {
 	.ping_interval = 1,
 	.ping_timeout = 1,
 	.ping_ttl = 64,
+	.ping_time = {0, 0},
 	.ping_num_emit = 0,
 	.ping_num_recv = 0,
 	.ping_num_rept = 0,
