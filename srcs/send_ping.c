@@ -25,7 +25,8 @@ void	ping_finish(void) {
 
 void	ping_send(void)
 {
-	printf("PING %s (%zu bytes)\n", g_ping.ping_hostname, g_ping.ping_data_len);
+	printf("PING %s (%s) %zu bytes\n",
+        g_ping.ping_hostname, g_ping.ping_ip, g_ping.ping_data_len);
 
     while (g_ping.ping_running) {
 		// Placeholder for ping sending logic

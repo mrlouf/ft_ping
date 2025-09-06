@@ -43,6 +43,7 @@ typedef struct s_ping
 	char	**args;
 	char	*ping_hostname;
 	char	*ping_ip;
+
 	int		is_root;
 	int		ping_socket;
 	int		ping_ident;
@@ -51,12 +52,14 @@ typedef struct s_ping
 	int		ping_interval;
 	int		ping_timeout;
 	int		ping_ttl;
-	int		ping_flag_a;
+
 	size_t	ping_num_emit;
 	size_t	ping_num_recv;
 	size_t	ping_num_rept;
 	int		ping_running;
 	struct	sockaddr_in ping_addr;
+
+	int		ping_flag_v;	// verbose
 
 }	t_ping;
 
