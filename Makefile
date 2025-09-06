@@ -54,6 +54,9 @@ $(OBJDIR)/%.o: $(SRCDIR)/%.c Makefile
 
 $(NAME): $(OBJS)
 	@$(CC) $(CFLAGS) $(OBJS) $(INCLUDE) $(LIBS) -o $(NAME)
+# TO BE DELETED WHEN DONE TESTING
+	@sudo chown root $(NAME)
+	@sudo chmod u+s $(NAME)
 
 clean:
 	@$(RM) $(OBJDIR) $(DEPDIR)

@@ -17,7 +17,7 @@
 */
 t_ping g_ping = {
 	.is_root = 0,
-	
+
 	.ping_hostname = NULL,
 	.ping_fqdn = NULL,
 	.ping_ip = NULL,
@@ -51,6 +51,7 @@ int	main(int ac, char **av) {
 		exit(1);
 	}
 
+	setuid(0);
 	// Check for root privileges
 	if (getuid() != 0) {
 		dprintf(STDERR_FILENO, "ft_ping: must be run as root\n");
