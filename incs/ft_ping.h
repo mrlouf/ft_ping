@@ -52,8 +52,6 @@ typedef struct s_ping
 	int		ping_interval;
 	int		ping_timeout;
 	int		ping_ttl;
-	struct	timeval ping_start;
-	struct	timeval	ping_time;
 
 	int		ping_seq_num;
 	size_t	ping_num_emit;
@@ -61,6 +59,12 @@ typedef struct s_ping
 	size_t	ping_num_rept;
 	int		ping_running;
 	struct	sockaddr_in ping_addr;
+
+	struct	timeval ping_start;
+	struct	timeval	ping_time;
+
+	double	ping_rtt_min;
+	double	ping_rtt_max;
 
 	int		ping_flag_v;	// verbose
 	int		ping_flag_c;	// count
@@ -72,6 +76,6 @@ typedef struct s_ping
 void	ping_parse(int ac, char **av);
 void	ping_send(void);
 void	ping_socket_init(void);
-void	ping_finish(void);
+void	ping_finish();
 
 #endif

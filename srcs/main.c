@@ -37,6 +37,9 @@ t_ping g_ping = {
 	.ping_running = 1,
 	.ping_addr = {0},
 
+	.ping_rtt_min = SIZE_MAX,
+	.ping_rtt_max = 0,
+
 	.ping_start = {0, 0},
 	.ping_time = {0, 0},
 
