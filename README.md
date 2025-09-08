@@ -29,24 +29,24 @@ A recreation in C of the ping implementation from inetutils-2.0 (ping -V)
 
 ### Glossary
 
-+ ICMP: Internet Control Message Protocol: used for sending error messages and operational information.
++ **ICMP**: _Internet Control Message Protocol_: used for sending error messages and operational information.
     Unlike TCP and UDP, ICMP is not used to exchange data between systems, but rather to send control messages.
 
-+ FQDN: Full Qualified Domain Name: complete domain name for a specific computer, or host, on the internet.
++ **FQDN**: _Full Qualified Domain Name_: complete domain name for a specific computer, or host, on the internet.
     For instance, `google.com`is a domain name, while `www.google.com` is a FQDN.
 
-+ ICMP Echo Request: a type of ICMP message used to test the reachability of a host on an IP network.
++ **ICMP Echo Request**: a type of ICMP message used to test the reachability of a host on an IP network.
     It is commonly used by the `ping` command to check if a host is alive and responding.
 
-+ ICMP Echo Reply: the response to an ICMP Echo Request, indicating that the host is reachable and responding.
++ **ICMP Echo Reply**: the response to an ICMP Echo Request, indicating that the host is reachable and responding.
 
-+ MTU: Maximum Transmission Unit: the largest size packet that can be sent over a network.
++ **MTU**: _Maximum Transmission Unit_: the largest size packet that can be sent over a network.
     If a packet exceeds the MTU, it must be fragmented into smaller packets before transmission.
     The MTU size can vary depending on the network type and configuration.
 
-+ RTT: Round-Trip Time: the time it takes for a packet to travel from the source to the destination and back.
++ **RTT**: _Round-Trip Time_: the time it takes for a packet to travel from the source to the destination and back.
 
-+ TTL: Time To Live: the maximum time a packet is allowed to circulate on the network before being discarded.
++ **TTL**: _Time To Live_: the maximum time a packet is allowed to circulate on the network before being discarded.
     Literally just a counter that is decremented by each router the packet passes through.
     When it reaches zero, the packet is discarded and an ICMP "Time Exceeded" message is sent back to the sender,
     along with the IP address and the type of the router that discarded the packet.
