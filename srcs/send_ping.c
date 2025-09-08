@@ -26,6 +26,8 @@ void	ping_finish(void) {
 	printf("--- %s ping statistics ---\n", g_ping.ping_hostname);
 	printf("%zu packets emitted, ", g_ping.ping_num_emit);
 	printf("%zu packets received, ", g_ping.ping_num_recv);
+	if (g_ping.ping_errs)
+		printf("+%zu errors, ", g_ping.ping_errs);
 	if (g_ping.ping_num_rept)
 		printf("+%zu duplicates, ", g_ping.ping_num_rept);
 	if (g_ping.ping_num_emit) {
@@ -51,11 +53,13 @@ void handle_time_exceeded(struct icmphdr *icmp, struct iphdr *ip, ssize_t bytes_
 			host,
 			inet_ntoa(addr.sin_addr),
 			ntohs(icmp->un.echo.sequence));
+		g_ping.ping_errs++;
 	} else {
 		printf("%zd bytes from %s: icmp_seq=%u Time to live exceeded\n",
 			bytes_received - (ip->ihl * 4),
 			inet_ntoa(addr.sin_addr),
 			ntohs(icmp->un.echo.sequence));
+		g_ping.ping_errs++;
 	}
 }
 
@@ -120,6 +124,7 @@ void    ping_receive(void)
 	if (bytes_received < 0) {
 		if (errno == EAGAIN || errno == EWOULDBLOCK) {
 			printf("Request timed out for icmp_seq=%u\n", g_ping.ping_seq_num);
+			g_ping.ping_errs++;
 		} else {
 			fprintf(stderr, "Error receiving packet: %s\n", strerror(errno));
 		}
@@ -176,6 +181,8 @@ void ping_send(void)
 		icmp->checksum = 0;
 		icmp->checksum = icmp_checksum(packet, sizeof(struct icmphdr) + g_ping.ping_data_len);
 
+		gettimeofday(&g_ping.ping_time, NULL);
+
 		ssize_t sent = sendto(
 			g_ping.ping_socket,
 			packet,
@@ -189,7 +196,6 @@ void ping_send(void)
 			continue;
 		} else {
 			g_ping.ping_num_emit++;
-			gettimeofday(&g_ping.ping_time, NULL);
 		}
 
 		ping_receive();

@@ -47,7 +47,7 @@ typedef struct s_ping
 	int		is_root;
 	int		ping_socket;
 	int		ping_ident;
-	int		ping_seq_num;
+	size_t	ping_errs;
 	size_t	ping_data_len;
 	int		ping_interval;
 	int		ping_timeout;
@@ -55,6 +55,7 @@ typedef struct s_ping
 	struct	timeval ping_start;
 	struct	timeval	ping_time;
 
+	int		ping_seq_num;
 	size_t	ping_num_emit;
 	size_t	ping_num_recv;
 	size_t	ping_num_rept;

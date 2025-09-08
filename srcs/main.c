@@ -16,19 +16,21 @@
 ** Global ping structure
 */
 t_ping g_ping = {
-	.is_root = 0,
 
 	.ping_hostname = NULL,
 	.ping_fqdn = NULL,
 	.ping_ip = NULL,
 
+	.is_root = 0,
 	.ping_socket = -1,
 	.ping_ident = 0,
-	.ping_seq_num = 0,
+	.ping_errs = 0,
 	.ping_data_len = 56,
 	.ping_interval = 1,
 	.ping_timeout = 1,
 	.ping_ttl = 64,
+
+	.ping_seq_num = 0,
 	.ping_num_emit = 0,
 	.ping_num_recv = 0,
 	.ping_num_rept = 0,
