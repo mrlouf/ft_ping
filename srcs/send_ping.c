@@ -24,7 +24,7 @@ void	ping_finish(void) {
 	fflush(stdout);
 	printf("\n");
 	printf("--- %s ping statistics ---\n", g_ping.ping_hostname);
-	printf("%zu packets emitted, ", g_ping.ping_num_emit);
+	printf("%zu packets transmitted, ", g_ping.ping_num_emit);
 	printf("%zu packets received, ", g_ping.ping_num_recv);
 	if (g_ping.ping_errs)
 		printf("+%zu errors, ", g_ping.ping_errs);
@@ -41,14 +41,25 @@ void	ping_finish(void) {
 	printf(", time %.0fms", total_time);
 	printf("\n");
 
+	double avg = 0, mdev = 0;
+    if (g_ping.ping_rtt_count > 0) {
+        // Calculate average
+        for (size_t i = 0; i < g_ping.ping_rtt_count; ++i)
+            avg += g_ping.ping_rtts[i];
+        avg /= g_ping.ping_rtt_count;
+
+        // Calculate mdev
+        for (size_t i = 0; i < g_ping.ping_rtt_count; ++i)
+            mdev += fabs(g_ping.ping_rtts[i] - avg);
+        mdev /= g_ping.ping_rtt_count;
+    }
+
 	if (g_ping.ping_num_recv > 0) {
-		// Here we could calculate min/avg/max/mdev if we stored each RTT
-		// For simplicity, we'll skip that part in this implementation
 		printf("rtt min/avg/max/mdev = %0.3f/%0.3f/%0.3f/%0.3f ms\n",
 			g_ping.ping_rtt_min,
-			(double)(g_ping.ping_rtt_min + g_ping.ping_rtt_max) / 2, // Placeholder for avg
+			avg,
 			g_ping.ping_rtt_max,
-			(double)0 // Placeholder for mdev
+			mdev
 		);
 	}
 
@@ -85,6 +96,12 @@ void	handle_echo_reply(struct icmphdr *icmp, struct iphdr *ip, ssize_t bytes_rec
 	// Calculate RTT
 	double rtt = ((now.tv_sec - g_ping.ping_time.tv_sec) * 1000.0) +
 		((now.tv_usec - g_ping.ping_time.tv_usec) / 1000.0);
+	rtt = round(rtt * 100.0) / 100.0;
+
+	// Store RTT for statistics
+	if (g_ping.ping_rtt_count < MAX_PINGS)
+		g_ping.ping_rtts[g_ping.ping_rtt_count++] = rtt;
+
 	if (rtt < g_ping.ping_rtt_min)
 		g_ping.ping_rtt_min = rtt;
 	if (rtt > g_ping.ping_rtt_max)

@@ -52,7 +52,7 @@ $(OBJDIR)/%.o: $(SRCDIR)/%.c Makefile
 	@mv $(patsubst %.o,%.d,$@) $(subst $(OBJDIR),$(DEPDIR),$(@D))/
 
 $(NAME): $(OBJS)
-	@$(CC) $(CFLAGS) $(OBJS) $(INCLUDE) $(LIBS) -o $(NAME)
+	@$(CC) $(CFLAGS) $(OBJS) $(INCLUDE) $(LIBS) -o $(NAME) -lm
 # TO BE DELETED WHEN DONE TESTING
 	@sudo chown root $(NAME)
 	@sudo chmod u+s $(NAME)

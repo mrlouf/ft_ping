@@ -24,17 +24,24 @@
 # include <limits.h>
 # include <stddef.h>
 # include <stdint.h>
+# include <fcntl.h>
+
+# include <errno.h>
+# include <time.h>
+# include <sys/time.h>
 
 # include <sys/types.h>
 # include <sys/socket.h>
 # include <netinet/in.h>
 # include <arpa/inet.h>
 # include <netdb.h>
-# include <errno.h>
-# include <time.h>
-# include <sys/time.h>
-# include <fcntl.h>
 # include <netinet/ip_icmp.h>
+
+# include <math.h>
+
+// Macros
+
+# define MAX_PINGS 1024
 
 // Typedefs
 
@@ -63,6 +70,9 @@ typedef struct s_ping
 	struct	timeval ping_start;
 	struct	timeval	ping_time;
 
+
+	double	ping_rtts[MAX_PINGS];
+	size_t	ping_rtt_count;
 	double	ping_rtt_min;
 	double	ping_rtt_max;
 
