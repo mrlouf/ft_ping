@@ -16,6 +16,11 @@ extern t_ping g_ping;
 
 void	ping_finish(void) {
 
+	struct timeval end;
+	gettimeofday(&end, NULL);
+	double total_time = ((end.tv_sec - g_ping.ping_start.tv_sec) * 1000.0) +
+		((end.tv_usec - g_ping.ping_start.tv_usec) / 1000.0);
+
 	fflush(stdout);
 	printf("\n");
 	printf("--- %s ping statistics ---\n", g_ping.ping_hostname);
@@ -31,6 +36,7 @@ void	ping_finish(void) {
 				(int)(((g_ping.ping_num_emit - g_ping.ping_num_recv) * 100)/
 				g_ping.ping_num_emit));
 	}
+	printf(", time %.0fms", total_time);
 	printf("\n");
 
 	free(g_ping.ping_fqdn);
@@ -65,11 +71,12 @@ void	handle_echo_reply(struct icmphdr *icmp, struct iphdr *ip, ssize_t bytes_rec
 		g_ping.ping_ip,
 		ntohs(icmp->un.echo.sequence),
 		ip->ttl,
-		(double)(now.tv_sec * 1000 + now.tv_usec / 1000) - (g_ping.ping_time.tv_sec * 1000 + g_ping.ping_time.tv_usec / 1000));
+		((now.tv_sec - g_ping.ping_time.tv_sec) * 1000.0) +
+    	((now.tv_usec - g_ping.ping_time.tv_usec) / 1000.0));
 }
 
 /*
-	Calculate ICMP checksum. The checksum is the 16-bit valure used in the ICMP header
+	Calculate ICMP checksum. The checksum is the 16-bit value used in the ICMP header
 	to verify the integrity of the whole ICMP message. It is computed by summing the
 	16-bit words of the ICMP message and taking the one's complement of the sum.
 	That's like checking if the label on a package matches its contents,
@@ -144,6 +151,8 @@ void    ping_receive(void)
 */
 void ping_send(void)
 {
+	gettimeofday(&g_ping.ping_start, NULL);
+
 	printf("PING %s (%s) %zu(%zu) bytes of data\n",
 		g_ping.ping_hostname,
 		g_ping.ping_ip,
