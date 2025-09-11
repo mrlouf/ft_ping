@@ -68,6 +68,9 @@ void handle_time_exceeded(struct icmphdr *icmp, struct iphdr *ip, ssize_t bytes_
 }
 
 void	handle_echo_reply(struct icmphdr *icmp, struct iphdr *ip, ssize_t bytes_received) {
+	// In handle_echo_reply
+	printf("Received icmp_seq=%u id=%u\n", ntohs(icmp->un.echo.sequence), ntohs(icmp->un.echo.id));
+	fflush(stdout);
 	g_ping.ping_num_recv++;
 	if (g_ping.ping_flag_q)
 		return;
@@ -123,9 +126,10 @@ void    ping_receive(void)
 
 	// Set socket to non-blocking with timeout
 	struct timeval tv;
+	memset(&tv, 0, sizeof(tv));
 	tv.tv_sec = g_ping.ping_timeout;
 	tv.tv_usec = 0;
-	setsockopt(g_ping.ping_socket, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv);
+	setsockopt(g_ping.ping_socket, SOL_SOCKET, SO_RCVBUF, (const char*)&tv, sizeof tv);
 
 	bytes_received = recvfrom(g_ping.ping_socket, buffer, sizeof(buffer), 0,
 							(struct sockaddr *)&addr, &addr_len);
@@ -193,6 +197,9 @@ void ping_send(void)
 
 		gettimeofday(&g_ping.ping_time, NULL);
 
+		// Before sendto
+		printf("Sending icmp_seq=%u id=%u\n", g_ping.ping_seq_num, g_ping.ping_ident);
+		
 		ssize_t sent = sendto(
 			g_ping.ping_socket,
 			packet,
