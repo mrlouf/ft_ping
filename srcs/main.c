@@ -42,7 +42,7 @@ t_ping g_ping = {
 
 	.ping_flag_v = 0,
 	.ping_flag_c = -1,
-	.ping_flag_s = 0,
+	.ping_flag_q = 0,
 };
 
 void	sigint_handler(int sig) {

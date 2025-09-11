@@ -67,7 +67,7 @@ void handle_time_exceeded(struct icmphdr *icmp, struct iphdr *ip, ssize_t bytes_
 
 void	handle_echo_reply(struct icmphdr *icmp, struct iphdr *ip, ssize_t bytes_received) {
 	g_ping.ping_num_recv++;
-
+	
 	struct timeval now;
 	gettimeofday(&now, NULL);
 

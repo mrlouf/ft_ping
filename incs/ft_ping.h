@@ -72,7 +72,7 @@ typedef struct s_ping
 
 	int		ping_flag_v;	// verbose
 	int		ping_flag_c;	// count
-	int		ping_flag_s;	// silent
+	int		ping_flag_q;	// quiet output
 
 }	t_ping;
 

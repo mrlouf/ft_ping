@@ -19,6 +19,7 @@ void	display_help(void)
 	printf("Usage: ft_ping [options] <destination>\n\n");
 	printf("Options:\n");
 	printf("  -c <count>    stop after sending (and receiving) <count> ECHO_RESPONSE packets\n");
+	printf("  -q			quiet output\n");
 	printf("  -s <size>     specify the number of data bytes to be sent\n");
 	printf("  -t <ttl>      set the Time To Live\n");
 	printf("  -v    	verbose output\n");
@@ -68,7 +69,7 @@ void	get_full_hostname(void)
 					host, sizeof(host), NULL, 0, 0) == 0) {
 		g_ping.ping_fqdn = strdup(host);
 	} else {
-		fprintf(stderr, "Could not get full hostname for IP \"%s\"\n", g_ping.ping_ip);
+		fprintf(stderr, "./ft_ping: Could not get full hostname for IP \"%s\"\n", g_ping.ping_ip);
 		exit(1);
 	}
 }
@@ -89,7 +90,7 @@ void	resolve_hostname(void)
 		freeaddrinfo(res);
 	} else {
 		g_ping.ping_ip = NULL;
-		fprintf(stderr, "Could not resolve hostname \"%s\"\n", g_ping.ping_hostname);
+		fprintf(stderr, "ft_ping: %s: Name or service not known\n", g_ping.ping_hostname);
 		exit(1);
 	}
 }
