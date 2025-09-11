@@ -70,14 +70,9 @@ typedef struct s_ping
 	struct	timeval ping_start;
 	struct	timeval	ping_time;
 
-
-	double	ping_rtts[MAX_PINGS];
-	size_t	ping_rtt_count;
-	double	ping_rtt_min;
-	double	ping_rtt_max;
-
 	int		ping_flag_v;	// verbose
 	int		ping_flag_c;	// count
+	int		ping_flag_s;	// silent
 
 }	t_ping;
 

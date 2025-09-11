@@ -30,7 +30,7 @@ void    ping_socket_init(void)
     g_ping.ping_ident = getpid() & 0xFFFF;
 
     g_ping.ping_addr.sin_family = AF_INET;
-    g_ping.ping_addr.sin_port = 0; // Not used in ICMP
+    g_ping.ping_addr.sin_port = 0; // Ports are not used in ICMP
 
     if (inet_pton(AF_INET, g_ping.ping_ip, &g_ping.ping_addr.sin_addr) <= 0) {
         fprintf(stderr, "Invalid IP address: %s\n", g_ping.ping_ip);

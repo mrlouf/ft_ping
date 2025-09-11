@@ -41,28 +41,6 @@ void	ping_finish(void) {
 	printf(", time %.0fms", total_time);
 	printf("\n");
 
-	double avg = 0, mdev = 0;
-    if (g_ping.ping_rtt_count > 0) {
-        // Calculate average
-        for (size_t i = 0; i < g_ping.ping_rtt_count; ++i)
-            avg += g_ping.ping_rtts[i];
-        avg /= g_ping.ping_rtt_count;
-
-        // Calculate mdev
-        for (size_t i = 0; i < g_ping.ping_rtt_count; ++i)
-            mdev += fabs(g_ping.ping_rtts[i] - avg);
-        mdev /= g_ping.ping_rtt_count;
-    }
-
-	if (g_ping.ping_num_recv > 0) {
-		printf("rtt min/avg/max/mdev = %0.3f/%0.3f/%0.3f/%0.3f ms\n",
-			g_ping.ping_rtt_min,
-			avg,
-			g_ping.ping_rtt_max,
-			mdev
-		);
-	}
-
 	if (g_ping.ping_socket != -1)
 		close(g_ping.ping_socket);
 	free(g_ping.ping_fqdn);
@@ -98,15 +76,6 @@ void	handle_echo_reply(struct icmphdr *icmp, struct iphdr *ip, ssize_t bytes_rec
 		((now.tv_usec - g_ping.ping_time.tv_usec) / 1000.0);
 	rtt = round(rtt * 100.0) / 100.0;
 
-	// Store RTT for statistics
-	if (g_ping.ping_rtt_count < MAX_PINGS)
-		g_ping.ping_rtts[g_ping.ping_rtt_count++] = rtt;
-
-	if (rtt < g_ping.ping_rtt_min)
-		g_ping.ping_rtt_min = rtt;
-	if (rtt > g_ping.ping_rtt_max)
-		g_ping.ping_rtt_max = rtt;
-
 	printf("%zd bytes from %s (%s): icmp_seq=%u ttl=%d, time=%.2f ms\n",
 		bytes_received - (ip->ihl * 4),
 		g_ping.ping_fqdn,
@@ -136,18 +105,6 @@ unsigned short icmp_checksum(void *b, int len) {
 	sum += (sum >> 16);
 	result = ~sum;
 	return result;
-}
-
-static void calculate_rtt() {
-	struct timeval now;
-	gettimeofday(&now, NULL);
-	size_t rtt = (now.tv_sec - g_ping.ping_time.tv_sec) * 1000 +
-				 (now.tv_usec - g_ping.ping_time.tv_usec) / 1000;
-
-	if (rtt < g_ping.ping_rtt_min)
-		g_ping.ping_rtt_min = rtt;
-	if (rtt > g_ping.ping_rtt_max)
-		g_ping.ping_rtt_max = rtt;
 }
 
 /*
@@ -186,7 +143,6 @@ void    ping_receive(void)
 
 	if (icmp->type == ICMP_ECHOREPLY && ntohs(icmp->un.echo.id) == g_ping.ping_ident) {
 		handle_echo_reply(icmp, ip, bytes_received);
-		calculate_rtt();
 	} else if (icmp->type == ICMP_TIME_EXCEEDED) {
 		handle_time_exceeded(icmp, ip, bytes_received, addr);
 	} else if (icmp->type == ICMP_ECHOREPLY) {
