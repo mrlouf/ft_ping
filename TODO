@@ -2,8 +2,6 @@
 
 - Implement the -i flag to change interval between packets
 
-- Add a summary at the end of the ping session with min/avg/max/mdev RTT
-
 - Refactor code for better readability and maintainability
 
 - Improve the packet size flag to match standard ping behavior

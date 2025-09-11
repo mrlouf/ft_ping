@@ -12,9 +12,6 @@
 
 #include "../incs/ft_ping.h"
 
-/*
-** Global ping structure
-*/
 t_ping g_ping = {
 
 	.ping_hostname = NULL,
@@ -63,6 +60,7 @@ int	main(int ac, char **av) {
 		dprintf(STDERR_FILENO, "ft_ping: must be run as root\n");
 		exit(1);
 	}
+
 	g_ping.is_root = 1;
 
 	struct sigaction sa;

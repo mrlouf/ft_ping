@@ -48,26 +48,30 @@ void	ping_finish(void) {
 }
 
 void handle_time_exceeded(struct icmphdr *icmp, struct iphdr *ip, ssize_t bytes_received, struct sockaddr_in addr) {
+	g_ping.ping_errs++;
+	if (g_ping.ping_flag_q)
+		return;
+	
 	char host[NI_MAXHOST];
 	if (getnameinfo((struct sockaddr *)&addr, sizeof(addr), host, sizeof(host), NULL, 0, 0) == 0) {
-		printf("%zd bytes from %s (%s): icmp_seq=%u Time to live exceeded\n",
+		printf("%zd bytes from %s: icmp_seq=%u Time to live exceeded\n",
 			bytes_received - (ip->ihl * 4),
-			host,
 			inet_ntoa(addr.sin_addr),
 			ntohs(icmp->un.echo.sequence));
-		g_ping.ping_errs++;
+
 	} else {
 		printf("%zd bytes from %s: icmp_seq=%u Time to live exceeded\n",
 			bytes_received - (ip->ihl * 4),
 			inet_ntoa(addr.sin_addr),
 			ntohs(icmp->un.echo.sequence));
-		g_ping.ping_errs++;
 	}
 }
 
 void	handle_echo_reply(struct icmphdr *icmp, struct iphdr *ip, ssize_t bytes_received) {
 	g_ping.ping_num_recv++;
-	
+	if (g_ping.ping_flag_q)
+		return;
+
 	struct timeval now;
 	gettimeofday(&now, NULL);
 
@@ -76,9 +80,8 @@ void	handle_echo_reply(struct icmphdr *icmp, struct iphdr *ip, ssize_t bytes_rec
 		((now.tv_usec - g_ping.ping_time.tv_usec) / 1000.0);
 	rtt = round(rtt * 100.0) / 100.0;
 
-	printf("%zd bytes from %s (%s): icmp_seq=%u ttl=%d, time=%.2f ms\n",
+	printf("%zd bytes from %s: icmp_seq=%u ttl=%d, time=%.2f ms\n",
 		bytes_received - (ip->ihl * 4),
-		g_ping.ping_fqdn,
 		g_ping.ping_ip,
 		ntohs(icmp->un.echo.sequence),
 		ip->ttl,
@@ -128,9 +131,10 @@ void    ping_receive(void)
 							(struct sockaddr *)&addr, &addr_len);
 
 	if (bytes_received < 0) {
+		g_ping.ping_errs++;
+
 		if (errno == EAGAIN || errno == EWOULDBLOCK) {
 			printf("Request timed out for icmp_seq=%u\n", g_ping.ping_seq_num);
-			g_ping.ping_errs++;
 		} else {
 			fprintf(stderr, "Error receiving packet: %s\n", strerror(errno));
 		}

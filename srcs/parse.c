@@ -29,6 +29,7 @@ void	display_help(void)
 void	get_flags(int ac, char **av)
 {
 	for (int i = 1; i < ac; i++) {
+
 		if (strcmp(av[i], "-c") == 0 && i + 1 < ac) {
 			g_ping.ping_flag_c = atoi(av[++i]);
 			if (g_ping.ping_flag_c <= 0) {
@@ -44,8 +45,17 @@ void	get_flags(int ac, char **av)
 				fprintf(stderr, "Invalid size value -- '%s'\n", av[i]);
 				exit(1);
 			}
+		} else if (strcmp(av[i], "-q") == 0) {
+			g_ping.ping_flag_q = 1;
 		} else if ((strcmp(av[i], "-t") == 0) && i + 1 < ac) {
-			g_ping.ping_ttl = atoi(av[++i]);
+			i++;
+			if (i + 1 == ac) {
+				fprintf(stderr, "Invalid TTL value -- '%s'\n", av[i]);
+				exit(1);
+			}
+
+			g_ping.ping_ttl = atoi(av[i]);
+
 			if (g_ping.ping_ttl <= 0 || g_ping.ping_ttl > 255) {
 				fprintf(stderr, "Invalid TTL value -- '%s'\n", av[i]);
 				exit(1);
@@ -58,7 +68,8 @@ void	get_flags(int ac, char **av)
 		} else if (av[i][0] == '-') {
 			fprintf(stderr, "Invalid option -- '%s'\n\n", av[i]);
 			display_help();
-			exit(1);}
+			exit(1);
+		}
 	}
 }
 
