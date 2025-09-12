@@ -161,14 +161,14 @@ void    ping_receive(void)
 			handle_time_exceeded(icmp, ip, bytes_received, addr);
 		} else if (icmp->type == ICMP_DEST_UNREACH) {
 			handle_unreachable(icmp, ip, bytes_received, addr);
-		} else if (ntohs(icmp->un.echo.id) == g_ping.ping_ident) {
-			printf("Remote host icmp sequence=%u\n", ntohs(icmp->un.echo.sequence));
-			handle_echo_reply(icmp, ip, bytes_received);
+		} else if (icmp->type == ICMP_ECHOREPLY && ntohs(icmp->un.echo.id) == g_ping.ping_ident) {
 			if (ntohs(icmp->un.echo.sequence) != g_ping.ping_seq_num) {
 				g_ping.ping_num_rept++;
 				if (g_ping.ping_flag_v) {
 					printf("Duplicate packet received: icmp_seq=%u\n", ntohs(icmp->un.echo.sequence));
 				}
+			} else {
+				handle_echo_reply(icmp, ip, bytes_received);
 			}
 		}
 	} else {
