@@ -5,3 +5,23 @@
 - Refactor code for better readability and maintainability
 
 - Improve the packet size flag to match standard ping behavior
+
+- Implement tracking of sequence:
+
+// structure globale
+bool g_ping.ping_recv_seq[65536]; // Pour toutes les séquences possibles (16 bits)
+
+// dans ping_receive()
+uint16_t recv_seq = ntohs(icmp->un.echo.sequence);
+
+if (received_sequences[recv_seq]) {
+    // vrai doublon
+    g_ping.ping_num_rept++;
+    if (g_ping.ping_flag_v) {
+        printf("(DUP!)");
+    }
+} else {
+    // premiere fois qu'on reçoit cette séquence
+    received_sequences[recv_seq] = true;
+    g_ping.ping_num_recv++;
+}
