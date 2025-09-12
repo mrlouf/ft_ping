@@ -68,8 +68,7 @@ void handle_time_exceeded(struct icmphdr *icmp, struct iphdr *ip, ssize_t bytes_
 }
 
 void	handle_echo_reply(struct icmphdr *icmp, struct iphdr *ip, ssize_t bytes_received) {
-	// In handle_echo_reply
-	printf("Received icmp_seq=%u id=%u\n", ntohs(icmp->un.echo.sequence), ntohs(icmp->un.echo.id));
+
 	fflush(stdout);
 	g_ping.ping_num_recv++;
 	if (g_ping.ping_flag_q)
@@ -196,9 +195,6 @@ void ping_send(void)
 		icmp->checksum = icmp_checksum(packet, sizeof(struct icmphdr) + g_ping.ping_data_len);
 
 		gettimeofday(&g_ping.ping_time, NULL);
-
-		// Before sendto
-		printf("Sending icmp_seq=%u id=%u\n", g_ping.ping_seq_num, g_ping.ping_ident);
 		
 		ssize_t sent = sendto(
 			g_ping.ping_socket,
