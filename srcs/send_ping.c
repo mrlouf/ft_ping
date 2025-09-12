@@ -67,6 +67,25 @@ void handle_time_exceeded(struct icmphdr *icmp, struct iphdr *ip, ssize_t bytes_
 	}
 }
 
+void handle_unreachable(struct icmphdr *icmp, struct iphdr *ip, ssize_t bytes_received, struct sockaddr_in addr) {
+	g_ping.ping_errs++;
+	if (g_ping.ping_flag_q)
+		return;
+
+	char host[NI_MAXHOST];
+	if (getnameinfo((struct sockaddr *)&addr, sizeof(addr), host, sizeof(host), NULL, 0, 0) == 0) {
+		printf("%zd bytes from %s: icmp_seq=%u Destination Host Unreachable\n",
+			bytes_received - (ip->ihl * 4),
+			inet_ntoa(addr.sin_addr),
+			ntohs(icmp->un.echo.sequence));
+	} else {
+		printf("%zd bytes from %s: icmp_seq=%u Destination Host Unreachable\n",
+			bytes_received - (ip->ihl * 4),
+			inet_ntoa(addr.sin_addr),
+			ntohs(icmp->un.echo.sequence));
+	}
+}
+
 void	handle_echo_reply(struct icmphdr *icmp, struct iphdr *ip, ssize_t bytes_received) {
 
 	fflush(stdout);
@@ -128,12 +147,31 @@ void    ping_receive(void)
 	memset(&tv, 0, sizeof(tv));
 	tv.tv_sec = g_ping.ping_timeout;
 	tv.tv_usec = 0;
-	setsockopt(g_ping.ping_socket, SOL_SOCKET, SO_RCVBUF, (const char*)&tv, sizeof tv);
+	//setsockopt(g_ping.ping_socket, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv);
 
 	bytes_received = recvfrom(g_ping.ping_socket, buffer, sizeof(buffer), 0,
 							(struct sockaddr *)&addr, &addr_len);
 
-	if (bytes_received < 0) {
+	if (bytes_received > 0) {
+		// Parse IP and ICMP headers from the received packet
+		struct iphdr *ip = (struct iphdr *)buffer;
+		struct icmphdr *icmp = (struct icmphdr *)(buffer + (ip->ihl * 4));
+
+		if (icmp->type == ICMP_TIME_EXCEEDED) {
+			handle_time_exceeded(icmp, ip, bytes_received, addr);
+		} else if (icmp->type == ICMP_DEST_UNREACH) {
+			handle_unreachable(icmp, ip, bytes_received, addr);
+		} else if (ntohs(icmp->un.echo.id) == g_ping.ping_ident) {
+			printf("Remote host icmp sequence=%u\n", ntohs(icmp->un.echo.sequence));
+			handle_echo_reply(icmp, ip, bytes_received);
+			if (ntohs(icmp->un.echo.sequence) != g_ping.ping_seq_num) {
+				g_ping.ping_num_rept++;
+				if (g_ping.ping_flag_v) {
+					printf("Duplicate packet received: icmp_seq=%u\n", ntohs(icmp->un.echo.sequence));
+				}
+			}
+		}
+	} else {
 		g_ping.ping_errs++;
 
 		if (errno == EAGAIN || errno == EWOULDBLOCK) {
@@ -141,24 +179,6 @@ void    ping_receive(void)
 		} else {
 			fprintf(stderr, "Error receiving packet: %s\n", strerror(errno));
 		}
-		return;
-	}
-
-	// Parse IP and ICMP headers from the received packet
-	struct iphdr *ip = (struct iphdr *)buffer;
-	struct icmphdr *icmp = (struct icmphdr *)(buffer + (ip->ihl * 4));
-
-	if (icmp->type == ICMP_ECHOREPLY && ntohs(icmp->un.echo.id) == g_ping.ping_ident) {
-		handle_echo_reply(icmp, ip, bytes_received);
-	} else if (icmp->type == ICMP_TIME_EXCEEDED) {
-		handle_time_exceeded(icmp, ip, bytes_received, addr);
-	} else if (icmp->type == ICMP_ECHOREPLY) {
-		g_ping.ping_num_rept++;
-		if (g_ping.ping_flag_v)
-			printf("Duplicate packet received: icmp_seq=%u\n", ntohs(icmp->un.echo.sequence));
-	} else {
-		if (g_ping.ping_flag_v)
-			printf("Received non-echo reply packet: type=%d code=%d\n", icmp->type, icmp->code);
 	}
 }
 
@@ -183,12 +203,13 @@ void ping_send(void)
 
 	while (g_ping.ping_running) {
 		memset(packet, 0, sizeof(packet));
+		g_ping.ping_seq_num++;
 
 		// Fill ICMP header
 		icmp->type = ICMP_ECHO;
 		icmp->code = 0;
 		icmp->un.echo.id = htons(g_ping.ping_ident);
-		icmp->un.echo.sequence = htons(++g_ping.ping_seq_num);
+		icmp->un.echo.sequence = htons(g_ping.ping_seq_num);
 
 		// Fill payload with zeroes
 		icmp->checksum = 0;
