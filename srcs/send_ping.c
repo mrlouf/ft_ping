@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   send_ping.c                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: nponchon <nponchon@student.42.fr>          +#+  +:+       +#+        */
+/*   By: nicolas <nicolas@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/06 14:21:55 by nponchon          #+#    #+#             */
-/*   Updated: 2025/09/06 14:55:00 by nponchon         ###   ########.fr       */
+/*   Updated: 2025/09/16 15:50:39 by nicolas          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -137,110 +137,194 @@ unsigned short icmp_checksum(void *b, int len) {
 */
 void    ping_receive(void)
 {
-	char buffer[1024];
-	struct sockaddr_in addr;
-	socklen_t addr_len = sizeof(addr);
-	ssize_t bytes_received;
+    char buffer[1024];
+    struct sockaddr_in addr;
+    socklen_t addr_len = sizeof(addr);
+    ssize_t bytes_received;
 
-	// Set socket to non-blocking with timeout
-	struct timeval tv;
-	memset(&tv, 0, sizeof(tv));
-	tv.tv_sec = g_ping.ping_timeout;
-	tv.tv_usec = 0;
-	//setsockopt(g_ping.ping_socket, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv);
+    bytes_received = recvfrom(g_ping.ping_socket, buffer, sizeof(buffer), 0,
+                            (struct sockaddr *)&addr, &addr_len);
 
-	bytes_received = recvfrom(g_ping.ping_socket, buffer, sizeof(buffer), 0,
-							(struct sockaddr *)&addr, &addr_len);
+    if (bytes_received > 0) {
+        // Parse IP and ICMP headers from the received packet
+        struct iphdr *ip = (struct iphdr *)buffer;
+        
+        // Validate IP header length
+        if (ip->ihl < 5 || bytes_received < (int)(ip->ihl * 4 + sizeof(struct icmphdr))) {
+            if (g_ping.ping_flag_v) {
+                printf("DEBUG: Malformed packet - ihl=%d, bytes_received=%zd, min_required=%zu\n",
+                       ip->ihl, bytes_received, ip->ihl * 4 + sizeof(struct icmphdr));
+            }
+            return;
+        }
+        
+        struct icmphdr *icmp = (struct icmphdr *)(buffer + (ip->ihl * 4));
 
-	if (bytes_received > 0) {
-		// Parse IP and ICMP headers from the received packet
-		struct iphdr *ip = (struct iphdr *)buffer;
-		struct icmphdr *icmp = (struct icmphdr *)(buffer + (ip->ihl * 4));
+        // FILTER OUT: Ignore our own outgoing Echo Requests (type=8)
+        if (icmp->type == ICMP_ECHO) {
+            // This is our own outgoing packet - ignore it
+            if (g_ping.ping_flag_v) {
+                printf("DEBUG: Ignoring outgoing ECHO REQUEST type=8, seq=%d\n", 
+                       ntohs(icmp->un.echo.sequence));
+            }
+            return;
+        }
 
-		if (icmp->type == ICMP_TIME_EXCEEDED) {
-			handle_time_exceeded(icmp, ip, bytes_received, addr);
-		} else if (icmp->type == ICMP_DEST_UNREACH) {
-			handle_unreachable(icmp, ip, bytes_received, addr);
-		} else if (icmp->type == ICMP_ECHOREPLY && ntohs(icmp->un.echo.id) == g_ping.ping_ident) {
-			if (ntohs(icmp->un.echo.sequence) != g_ping.ping_seq_num) {
-				g_ping.ping_num_rept++;
-				if (g_ping.ping_flag_v) {
-					printf("Duplicate packet received: icmp_seq=%u\n", ntohs(icmp->un.echo.sequence));
-				}
-			} else {
-				handle_echo_reply(icmp, ip, bytes_received);
-			}
-		}
-	} else {
-		g_ping.ping_errs++;
-
-		if (errno == EAGAIN || errno == EWOULDBLOCK) {
-			printf("Request timed out for icmp_seq=%u\n", g_ping.ping_seq_num);
-		} else {
-			fprintf(stderr, "Error receiving packet: %s\n", strerror(errno));
-		}
-	}
+        if (icmp->type == ICMP_TIME_EXCEEDED) {
+            handle_time_exceeded(icmp, ip, bytes_received, addr);
+        } else if (icmp->type == ICMP_DEST_UNREACH) {
+            handle_unreachable(icmp, ip, bytes_received, addr);
+        } else if (icmp->type == ICMP_ECHOREPLY && ntohs(icmp->un.echo.id) == g_ping.ping_ident) {
+            uint16_t recv_seq = ntohs(icmp->un.echo.sequence);
+            
+            // ACCEPT ANY VALID REPLY - don't be strict about sequence numbers
+            // This is important for localhost where replies come very fast
+            if (recv_seq <= g_ping.ping_seq_num && recv_seq > 0) {
+                handle_echo_reply(icmp, ip, bytes_received);
+            } else if (recv_seq > g_ping.ping_seq_num) {
+                // Future packet - shouldn't happen
+                g_ping.ping_num_rept++;
+                if (g_ping.ping_flag_v) {
+                    printf("Future packet received: icmp_seq=%u (expected <= %u)\n", 
+                           recv_seq, g_ping.ping_seq_num);
+                }
+            }
+        } else if (icmp->type == ICMP_ECHOREPLY) {
+            // Wrong ID - probably from another ping instance
+            g_ping.ping_num_rept++;
+            if (g_ping.ping_flag_v) {
+                printf("DEBUG: Reply with wrong ID: %u (expected %u)\n", 
+                       ntohs(icmp->un.echo.id), g_ping.ping_ident);
+            }
+        } else {
+            // Other ICMP types
+            if (g_ping.ping_flag_v) {
+                printf("DEBUG: Received ICMP type: %d\n", icmp->type);
+            }
+        }
+    } else if (bytes_received < 0) {
+        // Only report errors if it's not a timeout from select()
+        if (errno != EAGAIN && errno != EWOULDBLOCK) {
+            if (!g_ping.ping_flag_q) {
+                fprintf(stderr, "Error receiving packet: %s\n", strerror(errno));
+            }
+        }
+    }
 }
 
-/*
-	The main loop of the ping function. It sends ICMP Echo Request packets until
-	the user stops the process or a certain number of packets (specified by -c flag) have been sent.
-	It also handles receiving replies.
-*/
 void ping_send(void)
 {
-	gettimeofday(&g_ping.ping_start, NULL);
+    gettimeofday(&g_ping.ping_start, NULL);
 
-	printf("PING %s (%s) %zu(%zu) bytes of data\n",
-		g_ping.ping_hostname,
-		g_ping.ping_ip,
-		g_ping.ping_data_len,
-		g_ping.ping_data_len + sizeof(struct icmphdr) + sizeof(struct iphdr));
+    printf("PING %s (%s) %zu(%zu) bytes of data\n",
+        g_ping.ping_hostname,
+        g_ping.ping_ip,
+        g_ping.ping_data_len,
+        g_ping.ping_data_len + sizeof(struct icmphdr) + sizeof(struct iphdr));
 
-	// 56 bytes data by default, can be modified via the flag -s
-	char packet[g_ping.ping_data_len + sizeof(struct icmphdr) + sizeof(struct iphdr)];
-	struct icmphdr *icmp = (struct icmphdr *)packet;
+    char packet[g_ping.ping_data_len + sizeof(struct icmphdr) + sizeof(struct iphdr)];
+    struct icmphdr *icmp = (struct icmphdr *)packet;
+    
+    // Check if we're pinging localhost
+    int is_localhost = (strcmp(g_ping.ping_ip, "127.0.0.1") == 0);
 
-	while (g_ping.ping_running) {
-		memset(packet, 0, sizeof(packet));
-		g_ping.ping_seq_num++;
+    while (g_ping.ping_running) {
+        memset(packet, 0, sizeof(packet));
+        g_ping.ping_seq_num++;
 
-		// Fill ICMP header
-		icmp->type = ICMP_ECHO;
-		icmp->code = 0;
-		icmp->un.echo.id = htons(g_ping.ping_ident);
-		icmp->un.echo.sequence = htons(g_ping.ping_seq_num);
+        // Fill ICMP header
+        icmp->type = ICMP_ECHO;
+        icmp->code = 0;
+        icmp->un.echo.id = htons(g_ping.ping_ident);
+        icmp->un.echo.sequence = htons(g_ping.ping_seq_num);
+        icmp->checksum = 0;
+        icmp->checksum = icmp_checksum(packet, sizeof(struct icmphdr) + g_ping.ping_data_len);
 
-		// Fill payload with zeroes
-		icmp->checksum = 0;
-		icmp->checksum = icmp_checksum(packet, sizeof(struct icmphdr) + g_ping.ping_data_len);
+        gettimeofday(&g_ping.ping_time, NULL);
+        
+        if (is_localhost) {
+            printf("DEBUG: Sending localhost packet seq=%d, id=%d\n", g_ping.ping_seq_num, g_ping.ping_ident);
+        }
+        
+        ssize_t sent = sendto(
+            g_ping.ping_socket,
+            packet,
+            sizeof(struct icmphdr) + g_ping.ping_data_len,
+            0,
+            (struct sockaddr *)&g_ping.ping_addr,
+            sizeof(g_ping.ping_addr)
+        );
+        
+        if (sent < 0) {
+            if (!g_ping.ping_flag_q) {
+                fprintf(stderr, "Error sending packet: %s\n", strerror(errno));
+            }
+            g_ping.ping_errs++;
+        } else {
+            g_ping.ping_num_emit++;
+            if (is_localhost) {
+                printf("DEBUG: Successfully sent %zd bytes\n", sent);
+            }
+        }
 
-		gettimeofday(&g_ping.ping_time, NULL);
-		
-		ssize_t sent = sendto(
-			g_ping.ping_socket,
-			packet,
-			sizeof(struct icmphdr) + g_ping.ping_data_len,
-			0,
-			(struct sockaddr *)&g_ping.ping_addr,
-			sizeof(g_ping.ping_addr)
-		);
-		if (sent < 0) {
-			fprintf(stderr, "Error sending packet: %s\n", strerror(errno));
-			continue;
-		} else {
-			g_ping.ping_num_emit++;
-		}
+        // Use select() with proper timeout handling
+        fd_set read_fds;
+        struct timeval tv;
+        int packets_received = 0;
+        
+        // For localhost, we might receive multiple packets quickly
+        int max_packets = is_localhost ? 10 : 1;
+        
+        while (packets_received < max_packets) {
+            FD_ZERO(&read_fds);
+            FD_SET(g_ping.ping_socket, &read_fds);
+            
+            tv.tv_sec = is_localhost ? 0 : g_ping.ping_timeout;
+            tv.tv_usec = is_localhost ? 100000 : 0; // 100ms for localhost
+            
+            int ready = select(g_ping.ping_socket + 1, &read_fds, NULL, NULL, &tv);
+            
+            if (ready > 0 && FD_ISSET(g_ping.ping_socket, &read_fds)) {
+                size_t old_recv_count = g_ping.ping_num_recv;
+                ping_receive();
+                
+                // If we got a valid reply, break out
+                if (g_ping.ping_num_recv > old_recv_count) {
+                    break;
+                }
+                packets_received++;
+            } else if (ready == 0) {
+                // Timeout
+                if (packets_received == 0) {
+                    g_ping.ping_errs++;
+                    if (!g_ping.ping_flag_q) {
+                        printf("Request timeout for icmp_seq=%u\n", g_ping.ping_seq_num);
+                    }
+                }
+                break;
+            } else {
+                // Error in select()
+                if (errno != EINTR) {
+                    if (!g_ping.ping_flag_q) {
+                        fprintf(stderr, "Error in select: %s\n", strerror(errno));
+                    }
+                    g_ping.ping_errs++;
+                }
+                break;
+            }
+        }
 
-		ping_receive();
+        // Check if we should continue
+        if (g_ping.ping_flag_c > 0 && (int)g_ping.ping_num_emit >= g_ping.ping_flag_c) {
+            g_ping.ping_running = 0;
+            break;
+        }
 
-		if (g_ping.ping_flag_c > 0 && (int)g_ping.ping_num_emit >= g_ping.ping_flag_c) {
-			g_ping.ping_running = 0;
-			break;
-		}
+        // Wait before next ping (but don't sleep if we're done)
+        if (g_ping.ping_running) {
+            sleep(g_ping.ping_interval);
+        }
+    }
 
-		sleep(g_ping.ping_interval);
-	}
-
-	ping_finish();
+    ping_finish();
 }
