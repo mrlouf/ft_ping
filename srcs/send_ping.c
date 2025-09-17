@@ -47,21 +47,14 @@ void	ping_finish(void) {
 	exit(0);
 }
 
-void handle_time_exceeded(struct icmphdr *icmp, struct iphdr *ip, ssize_t bytes_received, struct sockaddr_in addr) {
-	g_ping.ping_errs++;
-	if (g_ping.ping_flag_q)
-		return;
-	
-	char host[NI_MAXHOST];
-	if (getnameinfo((struct sockaddr *)&addr, sizeof(addr), host, sizeof(host), NULL, 0, 0) == 0) {
-		printf("%zd bytes from %s: icmp_seq=%u Time to live exceeded\n",
-			bytes_received - (ip->ihl * 4),
-			inet_ntoa(addr.sin_addr),
-			ntohs(icmp->un.echo.sequence));
+void handle_time_exceeded(struct icmphdr *icmp, struct sockaddr_in addr) {
 
+	g_ping.ping_errs++;
+
+	if (g_ping.ping_flag_q) {
+		return;
 	} else {
-		printf("%zd bytes from %s: icmp_seq=%u Time to live exceeded\n",
-			bytes_received - (ip->ihl * 4),
+		printf("From %s: icmp_seq=%u Time to live exceeded\n",
 			inet_ntoa(addr.sin_addr),
 			ntohs(icmp->un.echo.sequence));
 	}
@@ -150,7 +143,7 @@ void    ping_receive(void)
         struct icmphdr *icmp = (struct icmphdr *)(buffer + (ip->ihl * 4));
 
         if (icmp->type == ICMP_TIME_EXCEEDED) {
-            handle_time_exceeded(icmp, ip, bytes_received, addr);
+            handle_time_exceeded(icmp, addr);
         } else if (icmp->type == ICMP_DEST_UNREACH) {
             handle_unreachable(icmp, ip, bytes_received, addr);
         } else if (icmp->type == ICMP_ECHOREPLY && ntohs(icmp->un.echo.id) == g_ping.ping_ident) {
@@ -222,12 +215,10 @@ void ping_send(void)
             g_ping.ping_num_emit++;
         }
 
-        // Use select() with proper timeout handling
         fd_set read_fds;
         struct timeval tv;
         int packets_received = 0;
         
-        // For localhost, we might receive multiple packets quickly
         int max_packets = is_localhost ? 10 : 1;
         
         while (packets_received < max_packets) {
@@ -242,14 +233,11 @@ void ping_send(void)
             if (ready > 0 && FD_ISSET(g_ping.ping_socket, &read_fds)) {
                 size_t old_recv_count = g_ping.ping_num_recv;
                 ping_receive();
-                
-                // If we got a valid reply, break out
                 if (g_ping.ping_num_recv > old_recv_count) {
                     break;
                 }
                 packets_received++;
             } else if (ready == 0) {
-                // Timeout
                 if (packets_received == 0) {
                     g_ping.ping_errs++;
                     if (!g_ping.ping_flag_q) {
@@ -258,7 +246,6 @@ void ping_send(void)
                 }
                 break;
             } else {
-                // Error in select()
                 if (errno != EINTR) {
                     if (!g_ping.ping_flag_q) {
                         fprintf(stderr, "Error in select: %s\n", strerror(errno));
@@ -269,13 +256,11 @@ void ping_send(void)
             }
         }
 
-        // Check if we should continue
         if (g_ping.ping_flag_c > 0 && (int)g_ping.ping_num_emit >= g_ping.ping_flag_c) {
             g_ping.ping_running = 0;
             break;
         }
 
-        // Wait before next ping (but don't sleep if we're done)
         if (g_ping.ping_running) {
             sleep(g_ping.ping_interval);
         }
