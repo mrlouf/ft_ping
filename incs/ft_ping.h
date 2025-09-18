@@ -70,6 +70,13 @@ typedef struct s_ping
 	struct	timeval ping_start;
 	struct	timeval	ping_time;
 
+	// Statistics
+	float	ping_rtt_arr[MAX_PINGS];
+	float	ping_min;
+	float	ping_max;
+	float	ping_avg;
+	float	ping_stddev;
+
 	int		ping_flag_v;	// verbose
 	int		ping_flag_c;	// count
 	int		ping_flag_q;	// quiet output

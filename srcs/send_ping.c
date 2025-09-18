@@ -41,6 +41,28 @@ void	ping_finish(void) {
 	printf(", time %.0fms", total_time);
 	printf("\n");
 
+    // Calculate average
+    if (g_ping.ping_num_recv > 0) {
+        g_ping.ping_avg = (g_ping.ping_min + g_ping.ping_max) / 2;
+    }
+
+    if (g_ping.ping_num_recv > 0) {
+        // Calculate standard deviation
+        double sum = 0.0;
+        for (size_t i = 0; i < g_ping.ping_num_recv && i < MAX_PINGS; i++) {
+            sum += (g_ping.ping_rtt_arr[i] - g_ping.ping_avg) * (g_ping.ping_rtt_arr[i] - g_ping.ping_avg);
+        }
+        g_ping.ping_stddev = sqrt(sum / g_ping.ping_num_recv);
+    } else {
+        g_ping.ping_stddev = 0.0;
+    }
+
+    printf("round-trip min/avg/max/stddev = %.3f/%.3f/%.3f/%.3f ms\n",
+		g_ping.ping_min,
+		g_ping.ping_avg,
+		g_ping.ping_max,
+		g_ping.ping_stddev);
+
 	if (g_ping.ping_socket != -1)
 		close(g_ping.ping_socket);
 	free(g_ping.ping_fqdn);
@@ -90,11 +112,22 @@ void	handle_echo_reply(struct icmphdr *icmp, struct iphdr *ip, ssize_t bytes_rec
 	gettimeofday(&now, NULL);
 
 	// Calculate RTT
-	double rtt = ((now.tv_sec - g_ping.ping_time.tv_sec) * 1000.0) +
+	float rtt = ((now.tv_sec - g_ping.ping_time.tv_sec) * 1000.0) +
 		((now.tv_usec - g_ping.ping_time.tv_usec) / 1000.0);
-	rtt = round(rtt * 100.0) / 100.0;
+	//rtt = round(rtt * 100.0) / 100.0;
 
-	printf("%zd bytes from %s: icmp_seq=%u ttl=%d, time=%.2f ms\n",
+    if (g_ping.ping_num_recv - 1 < MAX_PINGS)
+        g_ping.ping_rtt_arr[g_ping.ping_num_recv - 1] = rtt;
+
+    // Update min, max
+    if (g_ping.ping_min == 0 || rtt < g_ping.ping_min) {
+        g_ping.ping_min = rtt;
+    }
+    if (rtt > g_ping.ping_max) {
+        g_ping.ping_max = rtt;
+    }
+
+	printf("%zd bytes from %s: icmp_seq=%u ttl=%d, time=%.3f ms\n",
 		bytes_received - (ip->ihl * 4),
 		g_ping.ping_ip,
 		ntohs(icmp->un.echo.sequence),
@@ -149,7 +182,7 @@ void    ping_receive(void)
         } else if (icmp->type == ICMP_ECHOREPLY && ntohs(icmp->un.echo.id) == g_ping.ping_ident) {
             uint16_t recv_seq = ntohs(icmp->un.echo.sequence);
 
-            if (recv_seq <= g_ping.ping_seq_num && recv_seq > 0) {
+            if (recv_seq <= g_ping.ping_seq_num) {
                 handle_echo_reply(icmp, ip, bytes_received);
             } else if (recv_seq > g_ping.ping_seq_num) {
                 g_ping.ping_num_rept++;

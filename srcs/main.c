@@ -37,6 +37,12 @@ t_ping g_ping = {
 	.ping_start = {0, 0},
 	.ping_time = {0, 0},
 
+	.ping_rtt_arr = {0},
+	.ping_min = 0,
+	.ping_max = 0,
+	.ping_avg = 0,
+	.ping_stddev = 0,
+
 	.ping_flag_v = 0,
 	.ping_flag_c = -1,
 	.ping_flag_q = 0,
