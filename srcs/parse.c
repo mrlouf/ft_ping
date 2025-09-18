@@ -19,9 +19,10 @@ void	display_help(void)
 	printf("Usage: ft_ping [options] <destination>\n\n");
 	printf("Options:\n");
 	printf("  -c <count>    stop after sending (and receiving) <count> ECHO_RESPONSE packets\n");
+	printf("  -i <interval> set the interval between sending each packet\n");
 	printf("  -q			quiet output\n");
 	printf("  -s <size>     specify the number of data bytes to be sent\n");
-	printf("  -t <ttl>      set the Time To Live\n");
+	printf("  -ttl <N>    	set the Time-To-Live to <N>\n");
 	printf("  -v    	verbose output\n");
 	printf("  -?    	display this help and exit\n");
 }
@@ -33,7 +34,13 @@ void	get_flags(int ac, char **av)
 		if (strcmp(av[i], "-c") == 0 && i + 1 < ac) {
 			g_ping.ping_flag_c = atoi(av[++i]);
 			if (g_ping.ping_flag_c <= 0) {
-				fprintf(stderr, "Invalid count value -- '%s'\n", av[i]);
+				fprintf(stderr, "ft_ping: Invalid count value -- '%s'\n", av[i]);
+				exit(1);
+			}
+		} else if ((strcmp(av[i], "-i") == 0) && i + 1 < ac) {
+			g_ping.ping_interval = atof(av[++i]);
+			if (g_ping.ping_interval < 0.2) {
+				fprintf(stderr, "ft_ping: Invalid interval value -- '%s'\n", av[i]);
 				exit(1);
 			}
 		} else if ((strcmp(av[i], "-s") == 0) && i + 1 < ac) {
@@ -42,22 +49,22 @@ void	get_flags(int ac, char **av)
 			// The maximum payload size (Maximum Transmission Unit) for ICMP
 			// is typically 1472 bytes: 1500 MTU - 20 IP header - 8 ICMP header
 			if (g_ping.ping_data_len > 1472) {
-				fprintf(stderr, "Invalid size value -- '%s'\n", av[i]);
+				fprintf(stderr, "ft_ping: Invalid size value -- '%s'\n", av[i]);
 				exit(1);
 			}
 		} else if (strcmp(av[i], "-q") == 0) {
 			g_ping.ping_flag_q = 1;
-		} else if ((strcmp(av[i], "-t") == 0) && i + 1 < ac) {
+		} else if ((strcmp(av[i], "-ttl") == 0) && i + 1 < ac) {
 			i++;
 			if (i + 1 == ac) {
-				fprintf(stderr, "Invalid TTL value -- '%s'\n", av[i]);
+				fprintf(stderr, "ft_ping: Invalid TTL value -- '%s'\n", av[i]);
 				exit(1);
 			}
 
 			g_ping.ping_ttl = atoi(av[i]);
 
 			if (g_ping.ping_ttl <= 0 || g_ping.ping_ttl > 255) {
-				fprintf(stderr, "Invalid TTL value -- '%s'\n", av[i]);
+				fprintf(stderr, "ft_ping: Invalid TTL value -- '%s'\n", av[i]);
 				exit(1);
 			}
 		} else if (strcmp(av[i], "-v") == 0) {
@@ -66,7 +73,7 @@ void	get_flags(int ac, char **av)
 			display_help();
 			exit(0);
 		} else if (av[i][0] == '-') {
-			fprintf(stderr, "Invalid option -- '%s'\n\n", av[i]);
+			fprintf(stderr, "ft_ping: Invalid option -- '%s'\n\n", av[i]);
 			display_help();
 			exit(1);
 		}
@@ -80,7 +87,7 @@ void	get_full_hostname(void)
 					host, sizeof(host), NULL, 0, 0) == 0) {
 		g_ping.ping_fqdn = strdup(host);
 	} else {
-		fprintf(stderr, "./ft_ping: Could not get full hostname for IP \"%s\"\n", g_ping.ping_ip);
+		fprintf(stderr, "ft_ping: Could not get full hostname for IP \"%s\"\n", g_ping.ping_ip);
 		exit(1);
 	}
 }

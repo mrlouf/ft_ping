@@ -56,7 +56,7 @@ typedef struct s_ping
 	int		ping_ident;
 	size_t	ping_errs;
 	size_t	ping_data_len;
-	int		ping_interval;
+	float	ping_interval;
 	int		ping_timeout;
 	int		ping_ttl;
 
