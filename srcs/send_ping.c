@@ -114,7 +114,6 @@ void	handle_echo_reply(struct icmphdr *icmp, struct iphdr *ip, ssize_t bytes_rec
 	// Calculate RTT
 	float rtt = ((now.tv_sec - g_ping.ping_time.tv_sec) * 1000.0) +
 		((now.tv_usec - g_ping.ping_time.tv_usec) / 1000.0);
-	//rtt = round(rtt * 100.0) / 100.0;
 
     if (g_ping.ping_num_recv - 1 < MAX_PINGS)
         g_ping.ping_rtt_arr[g_ping.ping_num_recv - 1] = rtt;
