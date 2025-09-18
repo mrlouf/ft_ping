@@ -47,7 +47,7 @@ void	ping_finish(void) {
 	exit(0);
 }
 
-void handle_time_exceeded(struct icmphdr *icmp, struct sockaddr_in addr) {
+void handle_time_exceeded(struct sockaddr_in addr) {
 
 	g_ping.ping_errs++;
 
@@ -56,7 +56,7 @@ void handle_time_exceeded(struct icmphdr *icmp, struct sockaddr_in addr) {
 	} else {
 		printf("From %s: icmp_seq=%u Time to live exceeded\n",
 			inet_ntoa(addr.sin_addr),
-			ntohs(icmp->un.echo.sequence));
+			ntohs(g_ping.ping_num_emit));
 	}
 }
 
@@ -130,20 +130,20 @@ unsigned short icmp_checksum(void *b, int len) {
 */
 void    ping_receive(void)
 {
-    char buffer[1024];
-    struct sockaddr_in addr;
-    socklen_t addr_len = sizeof(addr);
-    ssize_t bytes_received;
+    char                buffer[1024];
+    struct sockaddr_in  addr;
+    socklen_t           addr_len = sizeof(addr);
+    ssize_t             bytes_received;
 
     bytes_received = recvfrom(g_ping.ping_socket, buffer, sizeof(buffer), 0,
                             (struct sockaddr *)&addr, &addr_len);
 
     if (bytes_received > 0) {
-        struct iphdr *ip = (struct iphdr *)buffer;        
-        struct icmphdr *icmp = (struct icmphdr *)(buffer + (ip->ihl * 4));
+        struct iphdr    *ip = (struct iphdr *)buffer;        
+        struct icmphdr  *icmp = (struct icmphdr *)(buffer + (ip->ihl * 4));
 
         if (icmp->type == ICMP_TIME_EXCEEDED) {
-            handle_time_exceeded(icmp, addr);
+            handle_time_exceeded(addr);
         } else if (icmp->type == ICMP_DEST_UNREACH) {
             handle_unreachable(icmp, ip, bytes_received, addr);
         } else if (icmp->type == ICMP_ECHOREPLY && ntohs(icmp->un.echo.id) == g_ping.ping_ident) {
@@ -215,9 +215,9 @@ void ping_send(void)
             g_ping.ping_num_emit++;
         }
 
-        fd_set read_fds;
-        struct timeval tv;
-        int packets_received = 0;
+        fd_set          read_fds;
+        struct timeval  tv;
+        int             packets_received = 0;
         
         int max_packets = is_localhost ? 10 : 1;
         

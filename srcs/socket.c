@@ -43,4 +43,13 @@ void    ping_socket_init(void)
         fprintf(stderr, "Error setting socket options: %s\n", strerror(errno));
         exit(1);
     }
+
+    if (g_ping.ping_flag_v) {
+        printf("ft_ping: sock4.fd: %d (socktype: %s), hints.ai_family: %s\n\n",
+               g_ping.ping_socket, "SOCK_RAW",
+               (g_ping.ping_addr.sin_family == AF_INET) ? "AF_INET" : "AF_INET6");
+        printf("ai->ai_family: %s, ai->ai_canonname: '%s'\n", 
+               (g_ping.ping_addr.sin_family == AF_INET) ? "AF_INET" : "AF_INET6",
+               g_ping.ping_hostname ? g_ping.ping_hostname : "NULL");
+    }
 }
