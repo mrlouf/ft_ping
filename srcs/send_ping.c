@@ -82,6 +82,26 @@ void handle_time_exceeded(struct iphdr *ip, struct sockaddr_in addr, ssize_t byt
             bytes_received - (ip->ihl * 4),
             inet_ntoa(addr.sin_addr));
     }
+    if (g_ping.ping_flag_v) {
+        printf("IP Hdr Dump:\n");
+        for (size_t i = 0; i < ip->ihl * 4; i++)
+            printf("%02x ", ((unsigned char *)ip)[i]);
+        printf("\n");
+        printf("Vr HL TOS  Len   ID Flg  off TTL Pro  cks      Src      Dst     Data\n");
+        printf(" 4  5  %02x %04x  %04x  %d %04x  %02x  %02x %04x %s %s \n",
+            ip->tos, ntohs(ip->tot_len), ntohs(ip->id),
+            (ntohs(ip->frag_off) & 0x4000) ? 1 : 0,
+            ntohs(ip->frag_off) & 0x1FFF,
+            ip->ttl, ip->protocol, ntohs(ip->check),
+            inet_ntoa(*(struct in_addr *)&ip->saddr),
+            inet_ntoa(*(struct in_addr *)&ip->daddr));
+        printf("ICMP: type %d, code %d, size %zd, id 0x%04x, seq 0x%04x\n",
+            ((unsigned char *)ip)[ip->ihl * 4],
+            ((unsigned char *)ip)[ip->ihl * 4 + 1],
+            bytes_received - (ip->ihl * 4),
+            g_ping.ping_ident,
+            g_ping.ping_seq_num);
+    }
 }
 
 void handle_unreachable(struct icmphdr *icmp, struct iphdr *ip, ssize_t bytes_received, struct sockaddr_in addr) {
