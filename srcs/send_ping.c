@@ -65,7 +65,7 @@ void	ping_finish(void) {
 	exit(0);
 }
 
-void handle_time_exceeded(struct iphdr *ip, struct sockaddr_in addr, ssize_t bytes_received) {
+void handle_time_exceeded(struct icmphdr *icmp, struct iphdr *ip, struct sockaddr_in addr, ssize_t bytes_received) {
 
 	//  g_ping.ping_errs++;
     char host[NI_MAXHOST];
@@ -96,11 +96,11 @@ void handle_time_exceeded(struct iphdr *ip, struct sockaddr_in addr, ssize_t byt
             inet_ntoa(*(struct in_addr *)&ip->saddr),
             inet_ntoa(*(struct in_addr *)&ip->daddr));
         printf("ICMP: type %d, code %d, size %zd, id 0x%04x, seq 0x%04x\n",
-            ((unsigned char *)ip)[ip->ihl * 4],
-            ((unsigned char *)ip)[ip->ihl * 4 + 1],
-            bytes_received - (ip->ihl * 4),
-            g_ping.ping_ident,
-            g_ping.ping_seq_num);
+            icmp->type,
+            icmp->code,
+            g_ping.ping_data_len + sizeof(struct icmphdr),
+            ntohs(icmp->un.echo.id),
+            ntohs(icmp->un.echo.sequence));
     }
 }
 
@@ -182,7 +182,7 @@ unsigned short icmp_checksum(void *b, int len) {
 	Receive ICMP Echo Reply packets and process them. Handles timeouts and
 	prints relevant information about the received packets or errors.
 */
-void    ping_receive(void)
+void    ping_receive(struct icmphdr *echo_request)
 {
     char                buffer[1024];
     struct sockaddr_in  addr;
@@ -193,11 +193,11 @@ void    ping_receive(void)
                             (struct sockaddr *)&addr, &addr_len);
 
     if (bytes_received > 0) {
-        struct iphdr    *ip = (struct iphdr *)buffer;        
+        struct iphdr    *ip = (struct iphdr *)buffer;
         struct icmphdr  *icmp = (struct icmphdr *)(buffer + (ip->ihl * 4));
 
         if (icmp->type == ICMP_TIME_EXCEEDED) {
-            handle_time_exceeded(ip, addr, bytes_received);
+            handle_time_exceeded(echo_request, ip, addr, bytes_received);
         } else if (icmp->type == ICMP_DEST_UNREACH) {
             handle_unreachable(icmp, ip, bytes_received, addr);
         } else if (icmp->type == ICMP_ECHOREPLY && ntohs(icmp->un.echo.id) == g_ping.ping_ident) {
@@ -205,12 +205,8 @@ void    ping_receive(void)
 
             if (recv_seq <= g_ping.ping_seq_num) {
                 handle_echo_reply(icmp, ip, bytes_received);
-            } else if (recv_seq > g_ping.ping_seq_num) {
+            } else {
                 g_ping.ping_num_rept++;
-/*                 if (g_ping.ping_flag_v) {
-                    printf("Future packet received: icmp_seq=%u (expected <= %u)\n", 
-                           recv_seq, g_ping.ping_seq_num);
-                } */
             }
 		}
     } else {
@@ -288,7 +284,7 @@ void ping_send(void)
             
             if (ready > 0 && FD_ISSET(g_ping.ping_socket, &read_fds)) {
                 size_t old_recv_count = g_ping.ping_num_recv;
-                ping_receive();
+                ping_receive(icmp);
                 if (g_ping.ping_num_recv > old_recv_count) {
                     break;
                 }

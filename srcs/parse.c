@@ -108,7 +108,7 @@ void	resolve_hostname(void)
 		freeaddrinfo(res);
 	} else {
 		g_ping.ping_ip = NULL;
-		fprintf(stderr, "ft_ping: %s: Name or service not known\n", g_ping.ping_hostname);
+		fprintf(stderr, "ft_ping: unknown host\n");
 		exit(1);
 	}
 }
