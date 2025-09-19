@@ -18,11 +18,10 @@ void	ping_finish(void) {
 
 	struct timeval end;
 	gettimeofday(&end, NULL);
-	double total_time = ((end.tv_sec - g_ping.ping_start.tv_sec) * 1000.0) +
-		((end.tv_usec - g_ping.ping_start.tv_usec) / 1000.0);
+/* 	double total_time = ((end.tv_sec - g_ping.ping_start.tv_sec) * 1000.0) +
+		((end.tv_usec - g_ping.ping_start.tv_usec) / 1000.0); */
 
 	fflush(stdout);
-	printf("\n");
 	printf("--- %s ping statistics ---\n", g_ping.ping_hostname);
 	printf("%zu packets transmitted, ", g_ping.ping_num_emit);
 	printf("%zu packets received, ", g_ping.ping_num_recv);
@@ -38,23 +37,20 @@ void	ping_finish(void) {
 				(int)(((g_ping.ping_num_emit - g_ping.ping_num_recv) * 100)/
 				g_ping.ping_num_emit));
 	}
-	printf(", time %.0fms", total_time);
+	// printf(", time %.0fms", total_time);
 	printf("\n");
 
     // Calculate average
-    if (g_ping.ping_num_recv > 0) {
+    if (g_ping.ping_num_recv <= 0) {
+        return ;
+    } else {
         g_ping.ping_avg = (g_ping.ping_min + g_ping.ping_max) / 2;
-    }
-
-    if (g_ping.ping_num_recv > 0) {
         // Calculate standard deviation
         double sum = 0.0;
         for (size_t i = 0; i < g_ping.ping_num_recv && i < MAX_PINGS; i++) {
             sum += (g_ping.ping_rtt_arr[i] - g_ping.ping_avg) * (g_ping.ping_rtt_arr[i] - g_ping.ping_avg);
         }
         g_ping.ping_stddev = sqrt(sum / g_ping.ping_num_recv);
-    } else {
-        g_ping.ping_stddev = 0.0;
     }
 
     printf("round-trip min/avg/max/stddev = %.3f/%.3f/%.3f/%.3f ms\n",
@@ -69,17 +65,23 @@ void	ping_finish(void) {
 	exit(0);
 }
 
-void handle_time_exceeded(struct sockaddr_in addr) {
+void handle_time_exceeded(struct iphdr *ip, struct sockaddr_in addr, ssize_t bytes_received) {
 
-	g_ping.ping_errs++;
+	//  g_ping.ping_errs++;
+    char host[NI_MAXHOST];
 
 	if (g_ping.ping_flag_q) {
 		return;
+	} else if (getnameinfo((struct sockaddr *)&addr, sizeof(addr), host, sizeof(host), NULL, 0, 0) == 0) {
+		printf("%zd bytes from %s (%s): Time to live exceeded\n",
+			bytes_received - (ip->ihl * 4),
+            host,
+			inet_ntoa(addr.sin_addr));
 	} else {
-		printf("From %s: icmp_seq=%u Time to live exceeded\n",
-			inet_ntoa(addr.sin_addr),
-			ntohs(g_ping.ping_num_emit));
-	}
+        printf("%zd bytes from %s: Time to live exceeded\n",
+            bytes_received - (ip->ihl * 4),
+            inet_ntoa(addr.sin_addr));
+    }
 }
 
 void handle_unreachable(struct icmphdr *icmp, struct iphdr *ip, ssize_t bytes_received, struct sockaddr_in addr) {
@@ -175,7 +177,7 @@ void    ping_receive(void)
         struct icmphdr  *icmp = (struct icmphdr *)(buffer + (ip->ihl * 4));
 
         if (icmp->type == ICMP_TIME_EXCEEDED) {
-            handle_time_exceeded(addr);
+            handle_time_exceeded(ip, addr, bytes_received);
         } else if (icmp->type == ICMP_DEST_UNREACH) {
             handle_unreachable(icmp, ip, bytes_received, addr);
         } else if (icmp->type == ICMP_ECHOREPLY && ntohs(icmp->un.echo.id) == g_ping.ping_ident) {
@@ -185,10 +187,10 @@ void    ping_receive(void)
                 handle_echo_reply(icmp, ip, bytes_received);
             } else if (recv_seq > g_ping.ping_seq_num) {
                 g_ping.ping_num_rept++;
-                if (g_ping.ping_flag_v) {
+/*                 if (g_ping.ping_flag_v) {
                     printf("Future packet received: icmp_seq=%u (expected <= %u)\n", 
                            recv_seq, g_ping.ping_seq_num);
-                }
+                } */
             }
 		}
     } else {
@@ -204,11 +206,14 @@ void ping_send(void)
 {
     gettimeofday(&g_ping.ping_start, NULL);
 
-    printf("PING %s (%s) %zu(%zu) bytes of data\n",
+    printf("PING %s (%s): %zu data bytes",
         g_ping.ping_hostname,
         g_ping.ping_ip,
-        g_ping.ping_data_len,
-        g_ping.ping_data_len + sizeof(struct icmphdr) + sizeof(struct iphdr));
+        g_ping.ping_data_len);
+    if (g_ping.ping_flag_v) {
+        printf(", id %#x = %d", g_ping.ping_ident, g_ping.ping_ident);
+    }
+    printf("\n");
 
     char packet[g_ping.ping_data_len + sizeof(struct icmphdr) + sizeof(struct iphdr)];
     struct icmphdr *icmp = (struct icmphdr *)packet;
@@ -217,7 +222,6 @@ void ping_send(void)
 
     while (g_ping.ping_running) {
         memset(packet, 0, sizeof(packet));
-        g_ping.ping_seq_num++;
 
         // Fill ICMP header
         icmp->type = ICMP_ECHO;
@@ -239,9 +243,9 @@ void ping_send(void)
         );
         
         if (sent < 0) {
-            if (!g_ping.ping_flag_q) {
+/*             if (!g_ping.ping_flag_q) {
                 fprintf(stderr, "Error sending packet: %s\n", strerror(errno));
-            }
+            } */
             g_ping.ping_errs++;
         } else {
             g_ping.ping_num_emit++;
@@ -272,9 +276,9 @@ void ping_send(void)
             } else if (ready == 0) {
                 if (packets_received == 0) {
                     g_ping.ping_errs++;
-                    if (!g_ping.ping_flag_q) {
+/*                     if (!g_ping.ping_flag_q) {
                         printf("Request timeout for icmp_seq=%u\n", g_ping.ping_seq_num);
-                    }
+                    } */
                 }
                 break;
             } else {
@@ -296,6 +300,7 @@ void ping_send(void)
         if (g_ping.ping_running) {
             sleep(g_ping.ping_interval);
         }
+        g_ping.ping_seq_num++;
     }
 
     ping_finish();

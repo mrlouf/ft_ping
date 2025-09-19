@@ -51,7 +51,7 @@ t_ping g_ping = {
 void	sigint_handler(int sig) {
 	(void)sig;
 	g_ping.ping_running = 0;
-	ping_finish();
+	//ping_finish();
 }
 
 int	main(int ac, char **av) {
