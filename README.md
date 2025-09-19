@@ -44,6 +44,10 @@ A recreation in C of the ping implementation from inetutils-2.0 (ping -V)
     If a packet exceeds the MTU, it must be fragmented into smaller packets before transmission.
     The MTU size can vary depending on the network type and configuration.
 
++ **Raw socket**: A raw socket is a type of socket that, unlike other types of socket (SOCK_STREAM, SOCK_DGRAM),
+    allow the user to access the network layer of the kernel, instead of only the transport layer, as well as manually edit the header.
+    This can be used to monitor networks, flood, forge packets, etc. Hence the restricted use to super-users.
+
 + **RTT**: _Round-Trip Time_: the time it takes for a packet to travel from the source to the destination and back.
 
 + **TTL**: _Time To Live_: the maximum time a packet is allowed to circulate on the network before being discarded.
