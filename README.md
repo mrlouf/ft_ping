@@ -15,7 +15,7 @@ A recreation in C of the ping implementation from inetutils-2.0 (ping -V)
 #### Open socket:
 
 > Create a raw socket for sending and receiving ICMP packets.<br>
-> This requires root-permission, so the program must be run with `sudo`.
+> This requires root-permission, so the program must be run with `sudo`, since raw sockets may allow packets at sensitive layers of the network/kernel.
 
 #### Main loop:
 
@@ -55,6 +55,7 @@ A recreation in C of the ping implementation from inetutils-2.0 (ping -V)
 ### References
 
 + https://www.binarytides.com/raw-sockets-c-code-linux/
++ https://www.baeldung.com/cs/raw-sockets
 + https://ftp.gnu.org/gnu/inetutils/
 + https://www.tutorialspoint.com/articles/index.php
 + https://www.geeksforgeeks.org/computer-networks/computer-network-tutorials/
