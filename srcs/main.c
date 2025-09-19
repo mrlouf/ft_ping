@@ -56,7 +56,7 @@ void	sigint_handler(int sig) {
 
 int	main(int ac, char **av) {
 	if (ac < 2) {
-		dprintf(STDERR_FILENO, "ft_ping: usage error: Destination address required\n");
+		dprintf(STDERR_FILENO, "ft_ping: missing host operand\nTry 'ft_ping -?' for more information.\n");
 		exit(1);
 	}
 
