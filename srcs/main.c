@@ -24,7 +24,7 @@ t_ping g_ping = {
 	.ping_errs = 0,
 	.ping_data_len = 56,
 	.ping_interval = 1,
-	.ping_timeout = 1,
+	.ping_timeout = 10,
 	.ping_ttl = 64,
 
 	.ping_seq_num = 0,

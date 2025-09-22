@@ -14,19 +14,33 @@
 
 extern t_ping g_ping;
 
+void print_averages(void) {
+
+	g_ping.ping_avg = (g_ping.ping_min + g_ping.ping_max) / 2;
+
+	double sum = 0.0;
+	for (size_t i = 0; i < g_ping.ping_num_recv && i < MAX_PINGS; i++) {
+		sum += (g_ping.ping_rtt_arr[i] - g_ping.ping_avg) * (g_ping.ping_rtt_arr[i] - g_ping.ping_avg);
+	}
+	g_ping.ping_stddev = sqrt(sum / g_ping.ping_num_recv);
+
+	printf("round-trip min/avg/max/stddev = %.3f/%.3f/%.3f/%.3f ms\n",
+		g_ping.ping_min,
+		g_ping.ping_avg,
+		g_ping.ping_max,
+		g_ping.ping_stddev);
+
+}
+
 void	ping_finish(void) {
 
 	struct timeval end;
 	gettimeofday(&end, NULL);
-/* 	double total_time = ((end.tv_sec - g_ping.ping_start.tv_sec) * 1000.0) +
-		((end.tv_usec - g_ping.ping_start.tv_usec) / 1000.0); */
 
 	fflush(stdout);
 	printf("--- %s ping statistics ---\n", g_ping.ping_hostname);
 	printf("%zu packets transmitted, ", g_ping.ping_num_emit);
 	printf("%zu packets received, ", g_ping.ping_num_recv);
-/* 	if (g_ping.ping_errs)
-		printf("+%zu errors, ", g_ping.ping_errs); */
 	if (g_ping.ping_num_rept)
 		printf("+%zu duplicates, ", g_ping.ping_num_rept);
 	if (g_ping.ping_num_emit) {
@@ -37,25 +51,10 @@ void	ping_finish(void) {
 				(int)(((g_ping.ping_num_emit - g_ping.ping_num_recv) * 100)/
 				g_ping.ping_num_emit));
 	}
-	// printf(", time %.0fms", total_time);
 	printf("\n");
 
-	// Calculate average RTT and standard deviation
-	if (g_ping.ping_num_recv > 0) {
-		g_ping.ping_avg = (g_ping.ping_min + g_ping.ping_max) / 2;
-
-		double sum = 0.0;
-		for (size_t i = 0; i < g_ping.ping_num_recv && i < MAX_PINGS; i++) {
-			sum += (g_ping.ping_rtt_arr[i] - g_ping.ping_avg) * (g_ping.ping_rtt_arr[i] - g_ping.ping_avg);
-		}
-		g_ping.ping_stddev = sqrt(sum / g_ping.ping_num_recv);
-
-		printf("round-trip min/avg/max/stddev = %.3f/%.3f/%.3f/%.3f ms\n",
-			g_ping.ping_min,
-			g_ping.ping_avg,
-			g_ping.ping_max,
-			g_ping.ping_stddev);
-	}
+	if (g_ping.ping_num_recv > 0)
+		print_averages();
 
 	if (g_ping.ping_socket != -1)
 		close(g_ping.ping_socket);
@@ -65,7 +64,6 @@ void	ping_finish(void) {
 
 void handle_time_exceeded(struct icmphdr *icmp, struct iphdr *ip, struct sockaddr_in addr, ssize_t bytes_received) {
 
-	//  g_ping.ping_errs++;
 	char host[NI_MAXHOST];
 
 	if (g_ping.ping_flag_q) {
@@ -199,13 +197,13 @@ void    ping_receive(struct icmphdr *echo_request)
 		} else if (icmp->type == ICMP_DEST_UNREACH) {
 			handle_unreachable(icmp, ip, bytes_received, addr);
 		} else if (icmp->type == ICMP_ECHOREPLY && ntohs(icmp->un.echo.id) == g_ping.ping_ident) {
+			
 			uint16_t recv_seq = ntohs(icmp->un.echo.sequence);
 
-			if (recv_seq <= g_ping.ping_seq_num) {
+			if (recv_seq <= g_ping.ping_seq_num)
 				handle_echo_reply(icmp, ip, bytes_received);
-			} else {
+			else
 				g_ping.ping_num_rept++;
-			}
 		}
 	} else {
 		if (errno != EAGAIN && errno != EWOULDBLOCK) {
@@ -216,6 +214,74 @@ void    ping_receive(struct icmphdr *echo_request)
 	}
 }
 
+void	send_packet(char *packet, size_t len, struct icmphdr *icmp)
+{
+	memset(packet, 0, len);
+
+	// Fill ICMP header
+	icmp->type = ICMP_ECHO;
+	icmp->code = 0;
+	icmp->un.echo.id = htons(g_ping.ping_ident);
+	icmp->un.echo.sequence = htons(g_ping.ping_seq_num);
+	icmp->checksum = 0;
+	icmp->checksum = icmp_checksum(packet, sizeof(struct icmphdr) + g_ping.ping_data_len);
+
+	gettimeofday(&g_ping.ping_time, NULL);
+	
+	sendto(
+		g_ping.ping_socket,
+		packet,
+		sizeof(struct icmphdr) + g_ping.ping_data_len,
+		0,
+		(struct sockaddr *)&g_ping.ping_addr,
+		sizeof(g_ping.ping_addr)
+	);
+	
+	g_ping.ping_num_emit++;
+}
+
+void socket_listen(struct icmphdr *icmp, int is_localhost)
+{
+	fd_set          read_fds;
+	struct timeval  tv;
+	int             packets_received = 0;
+	
+	int max_packets = is_localhost ? 10 : 1;
+	
+	while (packets_received < max_packets) {
+		FD_ZERO(&read_fds);
+		FD_SET(g_ping.ping_socket, &read_fds);
+		
+		tv.tv_sec = is_localhost ? 0 : g_ping.ping_timeout;
+		tv.tv_usec = is_localhost ? 100000 : 0; // 100ms for localhost
+		
+		int ready = select(g_ping.ping_socket + 1, &read_fds, NULL, NULL, &tv);
+		
+		if (ready > 0 && FD_ISSET(g_ping.ping_socket, &read_fds)) {
+			size_t old_recv_count = g_ping.ping_num_recv;
+			ping_receive(icmp);
+			if (g_ping.ping_num_recv > old_recv_count) {
+				break;
+			}
+			packets_received++;
+		} else if (ready == 0) {
+			if (packets_received == 0)
+				g_ping.ping_errs++;
+			break;
+		} else {
+			if (errno != EINTR)
+				g_ping.ping_errs++;
+			break;
+		}
+	}
+}
+
+/*
+	The main routine of the program:
+	- displays the info header
+	- builds the packet header and sends it
+	- listens for incoming return packets
+*/
 void ping_send(void)
 {
 	gettimeofday(&g_ping.ping_start, NULL);
@@ -229,81 +295,22 @@ void ping_send(void)
 	}
 	printf("\n");
 
-	char packet[g_ping.ping_data_len + sizeof(struct icmphdr) + sizeof(struct iphdr)];
-	struct icmphdr *icmp = (struct icmphdr *)packet;
+	size_t			packet_len = g_ping.ping_data_len		\
+								+ sizeof(struct icmphdr);
+	char			packet[packet_len];
+	struct icmphdr	*icmp = (struct icmphdr *)packet;
 
-	int is_localhost = (strcmp(g_ping.ping_ip, "127.0.0.1") == 0);
+	int is_localhost = (strncmp(g_ping.ping_ip, "127.0.0.", 8) == 0);
 
 	while (g_ping.ping_running) {
-		memset(packet, 0, sizeof(packet));
 
-		// Fill ICMP header
-		icmp->type = ICMP_ECHO;
-		icmp->code = 0;
-		icmp->un.echo.id = htons(g_ping.ping_ident);
-		icmp->un.echo.sequence = htons(g_ping.ping_seq_num);
-		icmp->checksum = 0;
-		icmp->checksum = icmp_checksum(packet, sizeof(struct icmphdr) + g_ping.ping_data_len);
-
-		gettimeofday(&g_ping.ping_time, NULL);
-		
-		sendto(
-			g_ping.ping_socket,
-			packet,
-			sizeof(struct icmphdr) + g_ping.ping_data_len,
-			0,
-			(struct sockaddr *)&g_ping.ping_addr,
-			sizeof(g_ping.ping_addr)
-		);
-		
-		g_ping.ping_num_emit++;
-
-		fd_set          read_fds;
-		struct timeval  tv;
-		int             packets_received = 0;
-		
-		int max_packets = is_localhost ? 10 : 1;
-		
-		while (packets_received < max_packets) {
-			FD_ZERO(&read_fds);
-			FD_SET(g_ping.ping_socket, &read_fds);
-			
-			tv.tv_sec = is_localhost ? 0 : g_ping.ping_timeout;
-			tv.tv_usec = is_localhost ? 100000 : 0; // 100ms for localhost
-			
-			int ready = select(g_ping.ping_socket + 1, &read_fds, NULL, NULL, &tv);
-			
-			if (ready > 0 && FD_ISSET(g_ping.ping_socket, &read_fds)) {
-				size_t old_recv_count = g_ping.ping_num_recv;
-				ping_receive(icmp);
-				if (g_ping.ping_num_recv > old_recv_count) {
-					break;
-				}
-				packets_received++;
-			} else if (ready == 0) {
-				if (packets_received == 0) {
-					g_ping.ping_errs++;
-/*                     if (!g_ping.ping_flag_q) {
-						printf("Request timeout for icmp_seq=%u\n", g_ping.ping_seq_num);
-					} */
-				}
-				break;
-			} else {
-				if (errno != EINTR) {
-					if (!g_ping.ping_flag_q) {
-						fprintf(stderr, "Error in select: %s\n", strerror(errno));
-					}
-					g_ping.ping_errs++;
-				}
-				break;
-			}
-		}
+		send_packet(packet, packet_len, icmp);
+		socket_listen(icmp, is_localhost);
 
 		if (g_ping.ping_flag_c > 0 && (int)g_ping.ping_num_emit >= g_ping.ping_flag_c) {
 			g_ping.ping_running = 0;
 			break;
 		}
-
 		if (g_ping.ping_running) {
 			sleep(g_ping.ping_interval);
 		}
