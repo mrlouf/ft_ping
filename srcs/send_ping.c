@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   send_ping.c                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: nicolas <nicolas@student.42.fr>            +#+  +:+       +#+        */
+/*   By: nponchon <nponchon@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/06 14:21:55 by nponchon          #+#    #+#             */
-/*   Updated: 2025/09/16 15:50:39 by nicolas          ###   ########.fr       */
+/*   Updated: 2025/09/23 07:44:47 by nponchon         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -260,10 +260,10 @@ void socket_listen(struct icmphdr *icmp, int is_localhost)
 		if (ready > 0 && FD_ISSET(g_ping.ping_socket, &read_fds)) {
 			size_t old_recv_count = g_ping.ping_num_recv;
 			ping_receive(icmp);
-			if (g_ping.ping_num_recv > old_recv_count) {
+			packets_received++;
+			if (!is_localhost && g_ping.ping_num_recv > old_recv_count) {
 				break;
 			}
-			packets_received++;
 		} else if (ready == 0) {
 			if (packets_received == 0)
 				g_ping.ping_errs++;
@@ -300,7 +300,8 @@ void ping_send(void)
 	char			packet[packet_len];
 	struct icmphdr	*icmp = (struct icmphdr *)packet;
 
-	int is_localhost = (strncmp(g_ping.ping_ip, "127.0.0.", 8) == 0);
+	int is_localhost = (strncmp(g_ping.ping_ip, "127.0.0.", 8) == 0) ||
+					   strncmp(g_ping.ping_ip, "0.0.0.0", 7) == 0;
 
 	while (g_ping.ping_running) {
 
