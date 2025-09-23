@@ -89,7 +89,7 @@ void handle_time_exceeded(struct icmphdr *icmp, struct iphdr *ip, struct sockadd
 			(ntohs(ip->frag_off) & 0x4000) ? 1 : 0,
 			ntohs(ip->frag_off) & 0x1FFF,
 			ip->ttl, ip->protocol, ntohs(ip->check),
-			inet_ntop(AF_INET, &ip->saddr, g_ping.ping_ip, INET_ADDRSTRLEN), // TODO: this needs to be the public source IP
+			inet_ntop(AF_INET, &ip->saddr, g_ping.ping_ip, INET_ADDRSTRLEN),
 			g_ping.ping_ip);
 		printf("ICMP: type %d, code %d, size %zd, id 0x%04x, seq 0x%04x\n",
 			icmp->type,

@@ -55,11 +55,6 @@ void	get_flags(int ac, char **av)
 		} else if (strcmp(av[i], "-q") == 0) {
 			g_ping.ping_flag_q = 1;
 		} else if ((strcmp(av[i], "--ttl") == 0) && i + 1 < ac) {
-/* 			if (av[i + 1] == 0) {
-				fprintf(stderr, "ft_ping: Invalid TTL value -- '%s'\n", av[i]);
-				exit(1);
-			} */
-
 			g_ping.ping_ttl = atoi(av[++i]);
 
 			if (g_ping.ping_ttl <= 0 || g_ping.ping_ttl > 255) {
