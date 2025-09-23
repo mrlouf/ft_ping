@@ -286,15 +286,6 @@ void ping_send(void)
 {
 	gettimeofday(&g_ping.ping_start, NULL);
 
-	printf("PING %s (%s): %zu data bytes",
-		g_ping.ping_hostname,
-		g_ping.ping_ip,
-		g_ping.ping_data_len);
-	if (g_ping.ping_flag_v) {
-		printf(", id %#x = %d", g_ping.ping_ident, g_ping.ping_ident);
-	}
-	printf("\n");
-
 	size_t			packet_len = g_ping.ping_data_len		\
 								+ sizeof(struct icmphdr);
 	char			packet[packet_len];

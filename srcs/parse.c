@@ -122,4 +122,17 @@ void	ping_parse(int ac, char **av)
 	resolve_hostname();
 	get_full_hostname();
 
+	if (strcmp(g_ping.ping_ip, "0.0.0.0") == 0) {
+		g_ping.ping_ip = "127.0.0.1";
+	}
+	// Initial ping output
+	printf("PING %s (%s): %zu data bytes",
+		g_ping.ping_hostname,
+		g_ping.ping_ip,
+		g_ping.ping_data_len);
+	if (g_ping.ping_flag_v) {
+		printf(", id %#x = %d", g_ping.ping_ident, g_ping.ping_ident);
+	}
+	printf("\n");
+
 }
