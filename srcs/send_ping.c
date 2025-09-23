@@ -6,7 +6,7 @@
 /*   By: nponchon <nponchon@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/06 14:21:55 by nponchon          #+#    #+#             */
-/*   Updated: 2025/09/23 07:44:47 by nponchon         ###   ########.fr       */
+/*   Updated: 2025/09/23 14:55:38 by nponchon         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -123,8 +123,6 @@ void	handle_echo_reply(struct icmphdr *icmp, struct iphdr *ip, ssize_t bytes_rec
 
 	fflush(stdout);
 	g_ping.ping_num_recv++;
-	if (g_ping.ping_flag_q)
-		return;
 
 	struct timeval now;
 	gettimeofday(&now, NULL);
@@ -143,6 +141,9 @@ void	handle_echo_reply(struct icmphdr *icmp, struct iphdr *ip, ssize_t bytes_rec
 	if (rtt > g_ping.ping_max) {
 		g_ping.ping_max = rtt;
 	}
+
+	if (g_ping.ping_flag_q)
+		return;
 
 	printf("%zd bytes from %s: icmp_seq=%u ttl=%d, time=%.3f ms\n",
 		bytes_received - (ip->ihl * 4),
@@ -284,6 +285,16 @@ void socket_listen(struct icmphdr *icmp, int is_localhost)
 */
 void ping_send(void)
 {
+	// Initial ping output
+	printf("PING %s (%s): %zu data bytes",
+		g_ping.ping_hostname,
+		g_ping.ping_ip,
+		g_ping.ping_data_len);
+	if (g_ping.ping_flag_v) {
+		printf(", id %#x = %d", g_ping.ping_ident, g_ping.ping_ident);
+	}
+	printf("\n");
+
 	gettimeofday(&g_ping.ping_start, NULL);
 
 	size_t			packet_len = g_ping.ping_data_len		\

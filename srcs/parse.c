@@ -6,7 +6,7 @@
 /*   By: nponchon <nponchon@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/05 18:28:49 by nponchon          #+#    #+#             */
-/*   Updated: 2025/09/06 14:42:23 by nponchon         ###   ########.fr       */
+/*   Updated: 2025/09/23 14:54:46 by nponchon         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -120,14 +120,5 @@ void	ping_parse(int ac, char **av)
 	if (strcmp(g_ping.ping_ip, "0.0.0.0") == 0) {
 		g_ping.ping_ip = "127.0.0.1";
 	}
-	// Initial ping output
-	printf("PING %s (%s): %zu data bytes",
-		g_ping.ping_hostname,
-		g_ping.ping_ip,
-		g_ping.ping_data_len);
-	if (g_ping.ping_flag_v) {
-		printf(", id %#x = %d", g_ping.ping_ident, g_ping.ping_ident);
-	}
-	printf("\n");
 
 }
